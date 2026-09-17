@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Booking, AdminSettings, Court } from '@/lib/types';
 import { getAllUserBookings, updateBookingStatus, getAdminSettings, updateAdminSettings, getCourts, createCourt, updateCourtDetails, updateCourtStatus } from '@/lib/supabase';
 import { DEFAULT_ADMIN_SETTINGS } from '@/lib/data';
-import { X, ShieldCheck, QrCode, Search, User, CheckCircle2, Save, RefreshCw, AlertCircle, Lock, KeyRound, LogOut, Plus, Trophy, ToggleLeft, ToggleRight, Edit3, DollarSign, Image as ImageIcon, Upload } from 'lucide-react';
+import { X, ShieldCheck, QrCode, Search, User, CheckCircle2, Save, RefreshCw, AlertCircle, Lock, KeyRound, LogOut, Plus, Trophy, ToggleLeft, ToggleRight, Edit3, DollarSign, Image as ImageIcon, Upload, Eye, EyeOff } from 'lucide-react';
 
 interface OwnerPortalModalProps {
   onClose: () => void;
@@ -87,10 +87,17 @@ export default function OwnerPortalModal({ onClose, onCourtsUpdated }: OwnerPort
     loadData();
   };
 
-  // Toggle Active / Inactive
+  // Immediate Optimistic Active / Inactive Toggle
   const handleToggleCourtActive = async (courtId: string, currentActive: boolean) => {
-    await updateCourtStatus(courtId, !currentActive);
-    await loadData();
+    const nextActiveState = !currentActive;
+    
+    // 1. Optimistically update local courts state immediately
+    setCourts(prev => prev.map(c => c.id === courtId ? { ...c, is_active: nextActiveState } : c));
+
+    // 2. Persist to Supabase and localStorage
+    await updateCourtStatus(courtId, nextActiveState);
+    
+    // 3. Notify parent homepage to update booking courts list
     if (onCourtsUpdated) onCourtsUpdated();
   };
 
@@ -489,7 +496,7 @@ export default function OwnerPortalModal({ onClose, onCourtsUpdated }: OwnerPort
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="text-sm font-bold text-slate-900">Courts, Photos & Active Status Management:</h3>
-                    <p className="text-xs text-slate-500">I-click ang <strong>Active/Inactive toggle button</strong> aron maka-enable/disable sa court, o edit price/picture.</p>
+                    <p className="text-xs text-slate-500 font-medium">I-click ang <strong>Active/Inactive toggle button</strong> aron maka-enable/disable sa court.</p>
                   </div>
                   <button
                     onClick={() => setShowAddCourtModal(true)}
@@ -535,25 +542,26 @@ export default function OwnerPortalModal({ onClose, onCourtsUpdated }: OwnerPort
                           <span>Edit Price & Picture</span>
                         </button>
 
-                        {/* Active / Inactive Toggle Button */}
+                        {/* Interactive Active / Inactive Toggle Button */}
                         <button
+                          type="button"
                           onClick={() => handleToggleCourtActive(court.id, court.is_active)}
-                          className={`px-3 py-1.5 rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition shadow-xs ${
+                          className={`px-3 py-1.5 rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-all shadow-sm active:scale-95 cursor-pointer ${
                             court.is_active 
-                              ? 'bg-emerald-100 text-emerald-800 border border-emerald-400 hover:bg-emerald-200' 
-                              : 'bg-rose-100 text-rose-800 border border-rose-300 hover:bg-rose-200'
+                              ? 'bg-emerald-500 text-white border border-emerald-600 hover:bg-emerald-600 shadow-emerald-500/20' 
+                              : 'bg-rose-500 text-white border border-rose-600 hover:bg-rose-600 shadow-rose-500/20'
                           }`}
-                          title="Click to toggle Active or Inactive status"
+                          title="Click to switch between Active and Inactive"
                         >
                           {court.is_active ? (
                             <>
-                              <ToggleRight className="w-5 h-5 text-emerald-600" />
-                              <span>Active</span>
+                              <ToggleRight className="w-5 h-5 text-lime-200" />
+                              <span>🟢 Active</span>
                             </>
                           ) : (
                             <>
-                              <ToggleLeft className="w-5 h-5 text-rose-500" />
-                              <span>Inactive (Disabled)</span>
+                              <ToggleLeft className="w-5 h-5 text-rose-200" />
+                              <span>🔴 Inactive (Disabled)</span>
                             </>
                           )}
                         </button>

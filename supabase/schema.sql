@@ -63,43 +63,13 @@ INSERT INTO public.courts (id, name, type, surface, hourly_rate, description, fe
 VALUES 
   (
     '11111111-1111-1111-1111-111111111111',
-    'Court 1 - Championship Covered',
+    'Court 1 - Championship Covered Court',
     'Indoor Covered',
-    'Tournament Cushioned Acrylic',
+    'Tournament Cushioned Acrylic Surface',
     350.00,
-    'Premier covered pickleball court equipped with high-performance LED lighting and official court dimensions.',
+    'Premier covered pickleball court equipped with high-performance LED lighting and official tournament court dimensions.',
     ARRAY['Covered Roof', 'LED Night Lighting', 'Official Net System', 'Spectator Seating'],
     'https://images.unsplash.com/photo-1626248801379-51a0748a5f96?auto=format&fit=crop&w=1200&q=80'
-  ),
-  (
-    '22222222-2222-2222-2222-222222222222',
-    'Court 2 - Outdoor Pro Court',
-    'Outdoor Pro',
-    'Pro-Grid Acrylic Court',
-    250.00,
-    'Open-air pickleball court with optimal traction, surrounded by lush Balamban mountain views.',
-    ARRAY['Mountain View', 'Outdoor Ventilation', 'High-Traction Surface', 'Shaded Bench'],
-    'https://images.unsplash.com/photo-1599586120429-48281b6f0eca?auto=format&fit=crop&w=1200&q=80'
-  ),
-  (
-    '33333333-3333-3333-3333-333333333333',
-    'Court 3 - Covered Training Court',
-    'Indoor Covered',
-    'Shock-Absorbing Composite',
-    300.00,
-    'Ideal court for regular practice matches, coaching lessons, and drill sessions.',
-    ARRAY['Covered Roof', 'Ball Machine Available', 'Coaching Ready', 'LED Lighting'],
-    'https://images.unsplash.com/photo-1534158914592-062992fbe900?auto=format&fit=crop&w=1200&q=80'
-  ),
-  (
-    '44444444-4444-4444-4444-444444444444',
-    'Court 4 - VIP Covered Arena',
-    'VIP Covered',
-    'Premium Pro Cushion Turf',
-    400.00,
-    'Exclusive private court with dedicated lounge area, sound system, and refreshment station.',
-    ARRAY['Private Lounge', 'Covered Roof', 'Dedicated Sound System', 'Free Cold Water', 'LED Night Lighting'],
-    'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=1200&q=80'
   )
 ON CONFLICT (id) DO NOTHING;
 
@@ -109,8 +79,12 @@ ALTER TABLE public.bookings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.settings ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Allow public read access to courts" ON public.courts FOR SELECT USING (true);
+CREATE POLICY "Allow public insert access to courts" ON public.courts FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow public update access to courts" ON public.courts FOR UPDATE USING (true);
+
 CREATE POLICY "Allow public read access to bookings" ON public.bookings FOR SELECT USING (true);
 CREATE POLICY "Allow public insert access to bookings" ON public.bookings FOR INSERT WITH CHECK (true);
 CREATE POLICY "Allow public update access to bookings" ON public.bookings FOR UPDATE USING (true);
+
 CREATE POLICY "Allow public read settings" ON public.settings FOR SELECT USING (true);
 CREATE POLICY "Allow public update settings" ON public.settings FOR ALL USING (true);

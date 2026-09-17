@@ -21,6 +21,9 @@ export async function getCourts(): Promise<Court[]> {
     try {
       const { data, error } = await supabase.from('courts').select('*').order('created_at', { ascending: true });
       if (!error && data && data.length > 0) {
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('balamban_pickleball_courts', JSON.stringify(data));
+        }
         return data as Court[];
       }
     } catch (err) {
@@ -46,6 +49,10 @@ export async function createCourt(newCourtData: Omit<Court, 'id'>): Promise<Cour
     try {
       const { data, error } = await supabase.from('courts').insert([court]).select().single();
       if (!error && data) {
+        if (typeof window !== 'undefined') {
+          const existing = await getCourts();
+          localStorage.setItem('balamban_pickleball_courts', JSON.stringify([...existing, data]));
+        }
         return data as Court;
       }
     } catch (err) {
@@ -62,10 +69,12 @@ export async function createCourt(newCourtData: Omit<Court, 'id'>): Promise<Cour
 }
 
 export async function updateCourtDetails(id: string, updates: Partial<Court>): Promise<boolean> {
+  let success = false;
+
   if (supabase) {
     try {
       const { error } = await supabase.from('courts').update(updates).eq('id', id);
-      if (!error) return true;
+      if (!error) success = true;
     } catch (err) {
       console.warn('Supabase update court details error:', err);
     }
@@ -75,9 +84,9 @@ export async function updateCourtDetails(id: string, updates: Partial<Court>): P
     const existing = await getCourts();
     const updated = existing.map(c => c.id === id ? { ...c, ...updates } : c);
     localStorage.setItem('balamban_pickleball_courts', JSON.stringify(updated));
-    return true;
+    success = true;
   }
-  return false;
+  return success;
 }
 
 export async function updateCourtStatus(id: string, is_active: boolean): Promise<boolean> {
