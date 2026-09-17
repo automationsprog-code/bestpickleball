@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Court, Booking, EquipmentRental, AdminSettings } from '@/lib/types';
-import { HOURLY_SLOTS, HourlySlot, DEFAULT_ADMIN_SETTINGS } from '@/lib/data';
+import { HOURLY_SLOTS, HourlySlot, DEFAULT_ADMIN_SETTINGS, generateHourlySlots } from '@/lib/data';
 import { getBookingsForDate, createBooking, getAdminSettings } from '@/lib/supabase';
 import { X, Calendar, Clock, CheckCircle2, QrCode, Ticket, Loader2 } from 'lucide-react';
 
@@ -18,12 +18,13 @@ export default function BookingModal({ court, onClose, onBookingSuccess }: Booki
   const todayStr = new Date().toISOString().split('T')[0];
 
   // Form states
+  const [adminSettings, setAdminSettings] = useState<AdminSettings>(DEFAULT_ADMIN_SETTINGS);
+  const [availableSlots, setAvailableSlots] = useState<HourlySlot[]>(HOURLY_SLOTS);
   const [selectedDate, setSelectedDate] = useState<string>(todayStr);
-  const [selectedSlot, setSelectedSlot] = useState<HourlySlot>(HOURLY_SLOTS[2]); // Default 8:00 AM - 9:00 AM
+  const [selectedSlot, setSelectedSlot] = useState<HourlySlot>(HOURLY_SLOTS[0] || HOURLY_SLOTS[2]);
   const [bookedSlots, setBookedSlots] = useState<string[]>([]);
   const [loadingSlots, setLoadingSlots] = useState<boolean>(false);
   const [submitting, setSubmitting] = useState<boolean>(false);
-  const [adminSettings, setAdminSettings] = useState<AdminSettings>(DEFAULT_ADMIN_SETTINGS);
 
   // Customer info
   const [customerName, setCustomerName] = useState('');
@@ -40,11 +41,14 @@ export default function BookingModal({ court, onClose, onBookingSuccess }: Booki
   // Confirmation view
   const [confirmedBooking, setConfirmedBooking] = useState<Booking | null>(null);
 
-  // Load Admin Settings & Booked Slots
+  // Load Admin Settings & Generate Dynamic Hourly Slots
   useEffect(() => {
     async function loadInitialData() {
       const sets = await getAdminSettings();
       setAdminSettings(sets);
+      const generated = generateHourlySlots(sets.opening_hour || 6, sets.closing_hour || 22);
+      setAvailableSlots(generated);
+      if (generated.length > 0) setSelectedSlot(generated[0]);
     }
     loadInitialData();
   }, []);
@@ -61,7 +65,7 @@ export default function BookingModal({ court, onClose, onBookingSuccess }: Booki
         
         // Auto-select first available slot if taken
         if (slotsForThisCourt.includes(selectedSlot.startTime)) {
-          const firstAvail = HOURLY_SLOTS.find(s => !slotsForThisCourt.includes(s.startTime));
+          const firstAvail = availableSlots.find(s => !slotsForThisCourt.includes(s.startTime));
           if (firstAvail) setSelectedSlot(firstAvail);
         }
       } catch (err) {
@@ -71,7 +75,7 @@ export default function BookingModal({ court, onClose, onBookingSuccess }: Booki
       }
     }
     loadSlots();
-  }, [selectedDate, court]);
+  }, [selectedDate, court, availableSlots]);
 
   // Generate next 7 days for quick date picker
   const upcomingDates = Array.from({ length: 7 }, (_, i) => {
@@ -265,7 +269,7 @@ export default function BookingModal({ court, onClose, onBookingSuccess }: Booki
               </div>
             </div>
 
-            {/* 2. Time Slot Selector (Per Hour) with Explicit Booked / Available Indicator */}
+            {/* 2. Time Slot Selector (Per Hour) */}
             <div>
               <div className="flex items-center justify-between mb-2">
                 <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
@@ -276,7 +280,7 @@ export default function BookingModal({ court, onClose, onBookingSuccess }: Booki
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                {HOURLY_SLOTS.map((slot) => {
+                {availableSlots.map((slot) => {
                   const isBooked = bookedSlots.includes(slot.startTime);
                   const isSelected = selectedSlot.startTime === slot.startTime;
 

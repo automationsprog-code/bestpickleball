@@ -45,6 +45,8 @@ export interface AdminSettings {
   maya_number: string;
   maya_name: string;
   maya_qr_url: string;
+  opening_hour?: number; // e.g. 6 (6 AM)
+  closing_hour?: number; // e.g. 22 (10 PM)
 }
 
 export type ViewportMode = 'responsive' | 'desktop' | 'tablet' | 'mobile';

@@ -89,6 +89,32 @@ export async function updateCourtDetails(id: string, updates: Partial<Court>): P
   return success;
 }
 
+export async function deleteCourt(id: string): Promise<boolean> {
+  if (supabase) {
+    try {
+      const { error } = await supabase.from('courts').delete().eq('id', id);
+      if (!error) {
+        if (typeof window !== 'undefined') {
+          const existing = await getCourts();
+          const filtered = existing.filter(c => c.id !== id);
+          localStorage.setItem('balamban_pickleball_courts', JSON.stringify(filtered));
+        }
+        return true;
+      }
+    } catch (err) {
+      console.warn('Supabase delete court error:', err);
+    }
+  }
+
+  if (typeof window !== 'undefined') {
+    const existing = await getCourts();
+    const filtered = existing.filter(c => c.id !== id);
+    localStorage.setItem('balamban_pickleball_courts', JSON.stringify(filtered));
+    return true;
+  }
+  return false;
+}
+
 export async function updateCourtStatus(id: string, is_active: boolean): Promise<boolean> {
   return updateCourtDetails(id, { is_active });
 }

@@ -2,9 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { Booking, AdminSettings, Court } from '@/lib/types';
-import { getAllUserBookings, updateBookingStatus, getAdminSettings, updateAdminSettings, getCourts, createCourt, updateCourtDetails, updateCourtStatus } from '@/lib/supabase';
+import { getAllUserBookings, updateBookingStatus, getAdminSettings, updateAdminSettings, getCourts, createCourt, updateCourtDetails, updateCourtStatus, deleteCourt } from '@/lib/supabase';
 import { DEFAULT_ADMIN_SETTINGS } from '@/lib/data';
-import { X, ShieldCheck, QrCode, Search, User, CheckCircle2, Save, RefreshCw, AlertCircle, Lock, KeyRound, LogOut, Plus, Trophy, ToggleLeft, ToggleRight, Edit3, DollarSign, Image as ImageIcon, Upload, Eye, EyeOff } from 'lucide-react';
+import { X, ShieldCheck, QrCode, Search, User, CheckCircle2, Save, RefreshCw, AlertCircle, Lock, KeyRound, LogOut, Plus, Trophy, ToggleLeft, ToggleRight, Edit3, DollarSign, Image as ImageIcon, Upload, Trash2, Clock } from 'lucide-react';
 
 interface OwnerPortalModalProps {
   onClose: () => void;
@@ -43,10 +43,11 @@ export default function OwnerPortalModal({ onClose, onCourtsUpdated }: OwnerPort
   const [editName, setEditName] = useState('');
   const [editType, setEditType] = useState<Court['type']>('Indoor Covered');
   const [editSurface, setEditSurface] = useState('');
+  const [editDesc, setEditDesc] = useState('');
   const [editImageUrl, setEditImageUrl] = useState('');
   const [savingEdit, setSavingEdit] = useState(false);
 
-  // Settings state (QR Code Upload)
+  // Settings state (QR Code Upload & Operating Hours)
   const [settings, setSettings] = useState<AdminSettings>(DEFAULT_ADMIN_SETTINGS);
   const [savingSettings, setSavingSettings] = useState(false);
   const [saveSuccessMsg, setSaveSuccessMsg] = useState(false);
@@ -87,6 +88,16 @@ export default function OwnerPortalModal({ onClose, onCourtsUpdated }: OwnerPort
     loadData();
   };
 
+  // Delete Court Handler
+  const handleDeleteCourt = async (courtId: string, courtName: string) => {
+    if (confirm(`Sigurado ka nga gusto nimo i-DELETE ang "${courtName}"?`)) {
+      await deleteCourt(courtId);
+      await loadData();
+      if (onCourtsUpdated) onCourtsUpdated();
+      alert('Court deleted successfully!');
+    }
+  };
+
   // Immediate Optimistic Active / Inactive Toggle
   const handleToggleCourtActive = async (courtId: string, currentActive: boolean) => {
     const nextActiveState = !currentActive;
@@ -108,6 +119,7 @@ export default function OwnerPortalModal({ onClose, onCourtsUpdated }: OwnerPort
     setEditName(court.name);
     setEditType(court.type);
     setEditSurface(court.surface || '');
+    setEditDesc(court.description || '');
     setEditImageUrl(court.image_url || '');
   };
 
@@ -164,12 +176,13 @@ export default function OwnerPortalModal({ onClose, onCourtsUpdated }: OwnerPort
         type: editType,
         surface: editSurface,
         hourly_rate: Number(editRate),
+        description: editDesc,
         image_url: editImageUrl
       });
       setEditingCourt(null);
       await loadData();
       if (onCourtsUpdated) onCourtsUpdated();
-      alert('Na-update na ang Court details & picture!');
+      alert('Na-update na ang Court info, price ug picture!');
     } catch (err) {
       alert('Failed to update court details.');
     } finally {
@@ -360,7 +373,7 @@ export default function OwnerPortalModal({ onClose, onCourtsUpdated }: OwnerPort
                 }`}
               >
                 <DollarSign className="w-4 h-4" />
-                <span>Edit Price / Manage Courts ({courts.length})</span>
+                <span>Edit Info, Price & Delete Courts ({courts.length})</span>
               </button>
 
               <button
@@ -372,7 +385,7 @@ export default function OwnerPortalModal({ onClose, onCourtsUpdated }: OwnerPort
                 }`}
               >
                 <QrCode className="w-4 h-4" />
-                <span>Upload Payment QR Code</span>
+                <span>Payment QR & Time Settings</span>
               </button>
             </div>
 
@@ -490,13 +503,13 @@ export default function OwnerPortalModal({ onClose, onCourtsUpdated }: OwnerPort
               </div>
             )}
 
-            {/* Tab 2: Manage & Add Courts / Edit Price & Pictures & Active Toggle */}
+            {/* Tab 2: Manage & Add Courts / Edit Info & Price / Delete Court */}
             {activeTab === 'courts' && (
               <div className="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-sm font-bold text-slate-900">Courts, Photos & Active Status Management:</h3>
-                    <p className="text-xs text-slate-500 font-medium">I-click ang <strong>Active/Inactive toggle button</strong> aron maka-enable/disable sa court.</p>
+                    <h3 className="text-sm font-bold text-slate-900">Courts, Photos & Pricing Management:</h3>
+                    <p className="text-xs text-slate-500 font-medium">Maka-edit ka sa Info/Price/Photo sa Court 1, o maka-delete o maka-add ug Court 2.</p>
                   </div>
                   <button
                     onClick={() => setShowAddCourtModal(true)}
@@ -507,7 +520,7 @@ export default function OwnerPortalModal({ onClose, onCourtsUpdated }: OwnerPort
                   </button>
                 </div>
 
-                {/* Courts Grid with Active Toggle & Photo Uploader */}
+                {/* Courts Grid with Delete & Edit Controls */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {courts.map((court) => (
                     <div key={court.id} className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3 shadow-xs">
@@ -533,23 +546,34 @@ export default function OwnerPortalModal({ onClose, onCourtsUpdated }: OwnerPort
 
                       <p className="text-[11px] text-slate-600 line-clamp-2 font-medium">{court.description}</p>
 
-                      <div className="pt-2 border-t border-slate-200 flex items-center justify-between">
-                        <button
-                          onClick={() => openEditModal(court)}
-                          className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-lime-600 text-white hover:text-slate-950 text-xs font-bold transition flex items-center gap-1.5 shadow-xs"
-                        >
-                          <Edit3 className="w-3.5 h-3.5" />
-                          <span>Edit Price & Picture</span>
-                        </button>
+                      <div className="pt-2 border-t border-slate-200 flex items-center justify-between gap-2">
+                        <div className="flex items-center space-x-2">
+                          <button
+                            onClick={() => openEditModal(court)}
+                            className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-lime-600 text-white hover:text-slate-950 text-xs font-bold transition flex items-center gap-1.5 shadow-xs"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                            <span>Edit Info & Price</span>
+                          </button>
 
-                        {/* Interactive Active / Inactive Toggle Button */}
+                          {/* Delete Court Button */}
+                          <button
+                            onClick={() => handleDeleteCourt(court.id, court.name)}
+                            className="p-1.5 rounded-xl bg-rose-100 text-rose-700 hover:bg-rose-500 hover:text-white transition border border-rose-300"
+                            title="Delete this Court"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+
+                        {/* Active / Inactive Toggle Button */}
                         <button
                           type="button"
                           onClick={() => handleToggleCourtActive(court.id, court.is_active)}
                           className={`px-3 py-1.5 rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-all shadow-sm active:scale-95 cursor-pointer ${
                             court.is_active 
-                              ? 'bg-emerald-500 text-white border border-emerald-600 hover:bg-emerald-600 shadow-emerald-500/20' 
-                              : 'bg-rose-500 text-white border border-rose-600 hover:bg-rose-600 shadow-rose-500/20'
+                              ? 'bg-emerald-500 text-white border border-emerald-600 hover:bg-emerald-600' 
+                              : 'bg-rose-500 text-white border border-rose-600 hover:bg-rose-600'
                           }`}
                           title="Click to switch between Active and Inactive"
                         >
@@ -561,7 +585,7 @@ export default function OwnerPortalModal({ onClose, onCourtsUpdated }: OwnerPort
                           ) : (
                             <>
                               <ToggleLeft className="w-5 h-5 text-rose-200" />
-                              <span>🔴 Inactive (Disabled)</span>
+                              <span>🔴 Inactive</span>
                             </>
                           )}
                         </button>
@@ -577,7 +601,7 @@ export default function OwnerPortalModal({ onClose, onCourtsUpdated }: OwnerPort
                       <div className="flex items-center justify-between border-b border-slate-200 pb-3">
                         <h4 className="text-base font-black text-slate-900 flex items-center gap-1.5">
                           <Edit3 className="w-5 h-5 text-lime-600" />
-                          <span>Edit Court Details & Picture</span>
+                          <span>Edit Court Details, Price & Picture</span>
                         </h4>
                         <button type="button" onClick={() => setEditingCourt(null)} className="p-1 rounded-lg hover:bg-slate-200">
                           <X className="w-5 h-5" />
@@ -623,6 +647,27 @@ export default function OwnerPortalModal({ onClose, onCourtsUpdated }: OwnerPort
                             <option value="VIP Covered">VIP Covered</option>
                           </select>
                         </div>
+                      </div>
+
+                      <div>
+                        <label className="text-xs font-bold text-slate-800 block mb-1">Surface Type</label>
+                        <input
+                          type="text"
+                          value={editSurface}
+                          onChange={(e) => setEditSurface(e.target.value)}
+                          placeholder="e.g. Tournament Cushioned Acrylic"
+                          className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-lime-600 font-medium"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-xs font-bold text-slate-800 block mb-1">Description</label>
+                        <textarea
+                          rows={2}
+                          value={editDesc}
+                          onChange={(e) => setEditDesc(e.target.value)}
+                          className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-lime-600 font-medium"
+                        />
                       </div>
 
                       {/* Photo Uploader */}
@@ -760,14 +805,14 @@ export default function OwnerPortalModal({ onClose, onCourtsUpdated }: OwnerPort
               </div>
             )}
 
-            {/* Tab 3: Upload Payment QR Code */}
+            {/* Tab 3: Upload Payment QR Code & Operating Hours */}
             {activeTab === 'qrcode' && (
               <form onSubmit={handleSaveSettings} className="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
                 
                 {saveSuccessMsg && (
                   <div className="bg-emerald-100 border border-emerald-300 p-3.5 rounded-2xl text-emerald-900 text-xs font-bold flex items-center gap-2">
                     <CheckCircle2 className="w-4 h-4 text-emerald-700" />
-                    <span>Na-save na sa Admin Settings ang bag-ong Payment QR Code ug Details!</span>
+                    <span>Na-save na sa Admin Settings ang Payment QR Code ug Operating Hours!</span>
                   </div>
                 )}
 
@@ -776,8 +821,38 @@ export default function OwnerPortalModal({ onClose, onCourtsUpdated }: OwnerPort
                   {/* Form Inputs */}
                   <div className="space-y-4">
                     <div>
-                      <h3 className="text-sm font-bold text-slate-900 mb-1">GCash Account Details & QR Code Upload:</h3>
-                      <p className="text-xs text-slate-500 mb-3 font-medium">I-upload ang imong GCash / Maya QR Code Image File o paste ang URL.</p>
+                      <h3 className="text-sm font-bold text-slate-900 mb-1">GCash Details & Operating Hours:</h3>
+                      <p className="text-xs text-slate-500 mb-3 font-medium">Configure GCash QR payment code and time slot booking schedule range.</p>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3 p-3 bg-slate-50 rounded-2xl border border-slate-200">
+                      <div>
+                        <label className="text-xs font-bold text-slate-800 block mb-1">Opening Hour (AM) *</label>
+                        <select
+                          value={settings.opening_hour || 6}
+                          onChange={(e) => setSettings({ ...settings, opening_hour: Number(e.target.value) })}
+                          className="w-full bg-white border border-slate-300 rounded-xl px-2.5 py-1.5 text-xs text-slate-900 font-bold"
+                        >
+                          <option value={5}>5:00 AM</option>
+                          <option value={6}>6:00 AM</option>
+                          <option value={7}>7:00 AM</option>
+                          <option value={8}>8:00 AM</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="text-xs font-bold text-slate-800 block mb-1">Closing Hour (PM) *</label>
+                        <select
+                          value={settings.closing_hour || 22}
+                          onChange={(e) => setSettings({ ...settings, closing_hour: Number(e.target.value) })}
+                          className="w-full bg-white border border-slate-300 rounded-xl px-2.5 py-1.5 text-xs text-slate-900 font-bold"
+                        >
+                          <option value={20}>8:00 PM</option>
+                          <option value={21}>9:00 PM</option>
+                          <option value={22}>10:00 PM</option>
+                          <option value={23}>11:00 PM</option>
+                        </select>
+                      </div>
                     </div>
 
                     <div>
@@ -831,7 +906,7 @@ export default function OwnerPortalModal({ onClose, onCourtsUpdated }: OwnerPort
                         className="w-full py-3.5 rounded-xl bg-lime-500 hover:bg-lime-600 text-slate-950 font-black text-xs tracking-wider transition shadow-md flex items-center justify-center gap-2"
                       >
                         <Save className="w-4 h-4" />
-                        <span>SAVE QR CODE & PAYMENT DETAILS</span>
+                        <span>SAVE QR CODE & TIME SETTINGS</span>
                       </button>
                     </div>
 
