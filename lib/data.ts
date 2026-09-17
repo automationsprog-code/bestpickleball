@@ -38,46 +38,13 @@ export const DEFAULT_ADMIN_SETTINGS: AdminSettings = {
 export const INITIAL_COURTS: Court[] = [
   {
     id: '11111111-1111-1111-1111-111111111111',
-    name: 'Court 1 - Championship Covered',
+    name: 'Court 1 - Championship Covered Court',
     type: 'Indoor Covered',
-    surface: 'Tournament Cushioned Acrylic',
+    surface: 'Tournament Cushioned Acrylic Surface',
     hourly_rate: 350,
-    description: 'Premier covered pickleball court equipped with high-performance LED lighting and official court dimensions.',
-    features: ['Covered Roof', 'LED Night Lighting', 'Official Net System', 'Spectator Seating'],
+    description: 'Premier covered pickleball court equipped with high-performance LED lighting and official tournament court dimensions.',
+    features: ['Covered Roof Structure', 'High-Lumen LED Night Lights', 'Official Net System', 'Spectator Seating Lounge'],
     image_url: 'https://images.unsplash.com/photo-1626248801379-51a0748a5f96?auto=format&fit=crop&w=1200&q=80',
-    is_active: true
-  },
-  {
-    id: '22222222-2222-2222-2222-222222222222',
-    name: 'Court 2 - Outdoor Pro Court',
-    type: 'Outdoor Pro',
-    surface: 'Pro-Grid Acrylic Court',
-    hourly_rate: 250,
-    description: 'Open-air pickleball court with optimal traction, surrounded by lush Balamban mountain views.',
-    features: ['Mountain View', 'Outdoor Ventilation', 'High-Traction Surface', 'Shaded Bench'],
-    image_url: 'https://images.unsplash.com/photo-1599586120429-48281b6f0eca?auto=format&fit=crop&w=1200&q=80',
-    is_active: true
-  },
-  {
-    id: '33333333-3333-3333-3333-333333333333',
-    name: 'Court 3 - Covered Training Court',
-    type: 'Indoor Covered',
-    surface: 'Shock-Absorbing Composite',
-    hourly_rate: 300,
-    description: 'Ideal court for regular practice matches, coaching lessons, and drill sessions.',
-    features: ['Covered Roof', 'Ball Machine Available', 'Coaching Ready', 'LED Lighting'],
-    image_url: 'https://images.unsplash.com/photo-1534158914592-062992fbe900?auto=format&fit=crop&w=1200&q=80',
-    is_active: true
-  },
-  {
-    id: '44444444-4444-4444-4444-444444444444',
-    name: 'Court 4 - VIP Covered Arena',
-    type: 'VIP Covered',
-    surface: 'Premium Pro Cushion Turf',
-    hourly_rate: 400,
-    description: 'Exclusive private court with dedicated lounge area, sound system, and refreshment station.',
-    features: ['Private Lounge', 'Covered Roof', 'Dedicated Sound System', 'Free Cold Water', 'LED Night Lighting'],
-    image_url: 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=1200&q=80',
     is_active: true
   }
 ];
@@ -87,7 +54,7 @@ export const INITIAL_BOOKINGS: Booking[] = [
     id: 'b-101',
     reference_no: 'BEST-PKL-9821',
     court_id: '11111111-1111-1111-1111-111111111111',
-    court_name: 'Court 1 - Championship Covered',
+    court_name: 'Court 1 - Championship Covered Court',
     customer_name: 'Juan Dela Cruz',
     customer_email: 'juan@example.com',
     customer_phone: '0917-123-4567',

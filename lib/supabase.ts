@@ -19,7 +19,7 @@ export const supabase = isSupabaseConfigured
 export async function getCourts(): Promise<Court[]> {
   if (supabase) {
     try {
-      const { data, error } = await supabase.from('courts').select('*').eq('is_active', true);
+      const { data, error } = await supabase.from('courts').select('*').order('created_at', { ascending: true });
       if (!error && data && data.length > 0) {
         return data as Court[];
       }
@@ -27,7 +27,57 @@ export async function getCourts(): Promise<Court[]> {
       console.warn('Supabase fetch courts error, using local fallback:', err);
     }
   }
+
+  if (typeof window !== 'undefined') {
+    const local = localStorage.getItem('balamban_pickleball_courts');
+    if (local) return JSON.parse(local);
+  }
   return INITIAL_COURTS;
+}
+
+export async function createCourt(newCourtData: Omit<Court, 'id'>): Promise<Court> {
+  const generatedId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : 'c-' + Date.now();
+  const court: Court = {
+    ...newCourtData,
+    id: generatedId
+  };
+
+  if (supabase) {
+    try {
+      const { data, error } = await supabase.from('courts').insert([court]).select().single();
+      if (!error && data) {
+        return data as Court;
+      }
+    } catch (err) {
+      console.warn('Supabase insert court error:', err);
+    }
+  }
+
+  if (typeof window !== 'undefined') {
+    const existing = await getCourts();
+    const updated = [...existing, court];
+    localStorage.setItem('balamban_pickleball_courts', JSON.stringify(updated));
+  }
+  return court;
+}
+
+export async function updateCourtStatus(id: string, is_active: boolean): Promise<boolean> {
+  if (supabase) {
+    try {
+      const { error } = await supabase.from('courts').update({ is_active }).eq('id', id);
+      if (!error) return true;
+    } catch (err) {
+      console.warn('Supabase update court error:', err);
+    }
+  }
+
+  if (typeof window !== 'undefined') {
+    const existing = await getCourts();
+    const updated = existing.map(c => c.id === id ? { ...c, is_active } : c);
+    localStorage.setItem('balamban_pickleball_courts', JSON.stringify(updated));
+    return true;
+  }
+  return false;
 }
 
 export async function getBookingsForDate(date: string): Promise<Booking[]> {
@@ -42,7 +92,6 @@ export async function getBookingsForDate(date: string): Promise<Booking[]> {
     }
   }
 
-  // Local fallback
   if (typeof window !== 'undefined') {
     const local = localStorage.getItem('balamban_pickleball_bookings');
     const allBookings: Booking[] = local ? JSON.parse(local) : INITIAL_BOOKINGS;
@@ -73,7 +122,6 @@ export async function createBooking(newBooking: Omit<Booking, 'id' | 'created_at
     }
   }
 
-  // Save to localStorage
   if (typeof window !== 'undefined') {
     const local = localStorage.getItem('balamban_pickleball_bookings');
     const existing: Booking[] = local ? JSON.parse(local) : INITIAL_BOOKINGS;
