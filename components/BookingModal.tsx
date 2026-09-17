@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Court, Booking, EquipmentRental } from '@/lib/types';
-import { TIME_SLOTS } from '@/lib/data';
-import { getBookingsForDate, createBooking } from '@/lib/supabase';
+import { Court, Booking, EquipmentRental, AdminSettings } from '@/lib/types';
+import { HOURLY_SLOTS, HourlySlot, DEFAULT_ADMIN_SETTINGS } from '@/lib/data';
+import { getBookingsForDate, createBooking, getAdminSettings } from '@/lib/supabase';
 import { X, Calendar, Clock, User, Phone, Mail, CheckCircle2, ShieldCheck, DollarSign, QrCode, Ticket, Loader2 } from 'lucide-react';
 
 interface BookingModalProps {
@@ -19,10 +19,11 @@ export default function BookingModal({ court, onClose, onBookingSuccess }: Booki
 
   // Form states
   const [selectedDate, setSelectedDate] = useState<string>(todayStr);
-  const [selectedSlot, setSelectedSlot] = useState<string>('08:00');
+  const [selectedSlot, setSelectedSlot] = useState<HourlySlot>(HOURLY_SLOTS[2]); // Default 8:00 AM - 9:00 AM
   const [bookedSlots, setBookedSlots] = useState<string[]>([]);
   const [loadingSlots, setLoadingSlots] = useState<boolean>(false);
   const [submitting, setSubmitting] = useState<boolean>(false);
+  const [adminSettings, setAdminSettings] = useState<AdminSettings>(DEFAULT_ADMIN_SETTINGS);
 
   // Customer info
   const [customerName, setCustomerName] = useState('');
@@ -39,7 +40,15 @@ export default function BookingModal({ court, onClose, onBookingSuccess }: Booki
   // Confirmation view
   const [confirmedBooking, setConfirmedBooking] = useState<Booking | null>(null);
 
-  // Fetch existing bookings when date or court changes
+  // Load Admin QR Settings & Booked Slots
+  useEffect(() => {
+    async function loadInitialData() {
+      const sets = await getAdminSettings();
+      setAdminSettings(sets);
+    }
+    loadInitialData();
+  }, []);
+
   useEffect(() => {
     async function loadSlots() {
       setLoadingSlots(true);
@@ -50,9 +59,9 @@ export default function BookingModal({ court, onClose, onBookingSuccess }: Booki
           .map(b => b.start_time);
         setBookedSlots(slotsForThisCourt);
         
-        // Auto-select first available slot if currently selected is taken
-        if (slotsForThisCourt.includes(selectedSlot)) {
-          const firstAvail = TIME_SLOTS.find(s => !slotsForThisCourt.includes(s));
+        // Auto-select first available slot if taken
+        if (slotsForThisCourt.includes(selectedSlot.startTime)) {
+          const firstAvail = HOURLY_SLOTS.find(s => !slotsForThisCourt.includes(s.startTime));
           if (firstAvail) setSelectedSlot(firstAvail);
         }
       } catch (err) {
@@ -81,13 +90,6 @@ export default function BookingModal({ court, onClose, onBookingSuccess }: Booki
   const coachPrice = coachAdded ? 300 : 0;
   const totalPrice = courtPrice + paddlePrice + ballPrice + coachPrice;
 
-  // Calculate end time (+1 hour)
-  const getEndTime = (startTime: string) => {
-    const hour = parseInt(startTime.split(':')[0], 10);
-    const endHour = hour + 1;
-    return `${endHour < 10 ? '0' : ''}${endHour}:00`;
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!customerName || !customerPhone) {
@@ -112,11 +114,13 @@ export default function BookingModal({ court, onClose, onBookingSuccess }: Booki
       customer_email: customerEmail || 'customer@balamban.ph',
       customer_phone: customerPhone,
       booking_date: selectedDate,
-      start_time: selectedSlot,
-      end_time: getEndTime(selectedSlot),
+      time_slot_label: selectedSlot.label,
+      start_time: selectedSlot.startTime,
+      end_time: selectedSlot.endTime,
       total_amount: totalPrice,
       equipment_rentals: rentals,
       payment_method: paymentMethod,
+      payment_status: paymentMethod === 'Pay at Court' ? 'Pending' : 'Paid',
       status: 'Confirmed',
       notes
     };
@@ -127,14 +131,14 @@ export default function BookingModal({ court, onClose, onBookingSuccess }: Booki
       onBookingSuccess(created);
     } catch (err) {
       console.error('Error creating booking:', err);
-      alert('May problema sa pag-save sa reservation. Palihug sulayi pag-usab.');
+      alert('May problema sa pag-save sa reservation.');
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
+    <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
       <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-2xl w-full overflow-hidden shadow-2xl my-auto animate-in fade-in zoom-in-95 duration-200">
         
         {/* Modal Header */}
@@ -183,36 +187,43 @@ export default function BookingModal({ court, onClose, onBookingSuccess }: Booki
                 <span className="font-bold text-white">{court.name}</span>
               </div>
               <div className="flex justify-between border-b border-slate-800 pb-2">
-                <span className="text-slate-400">Date & Schedule:</span>
-                <span className="font-bold text-lime-400">{confirmedBooking.booking_date} ({confirmedBooking.start_time} - {confirmedBooking.end_time})</span>
+                <span className="text-slate-400">Date & Hourly Slot:</span>
+                <span className="font-bold text-lime-400">{confirmedBooking.booking_date} ({confirmedBooking.time_slot_label})</span>
               </div>
               <div className="flex justify-between border-b border-slate-800 pb-2">
                 <span className="text-slate-400">Customer Name:</span>
                 <span className="font-semibold text-white">{confirmedBooking.customer_name} ({confirmedBooking.customer_phone})</span>
               </div>
               <div className="flex justify-between border-b border-slate-800 pb-2">
-                <span className="text-slate-400">Payment Method:</span>
+                <span className="text-slate-400">Payment Option:</span>
                 <span className="font-semibold text-slate-200">{confirmedBooking.payment_method}</span>
               </div>
               <div className="flex justify-between text-base font-black pt-1">
-                <span className="text-slate-300">Total Paid/Amount:</span>
+                <span className="text-slate-300">Total Amount:</span>
                 <span className="text-lime-400">₱{confirmedBooking.total_amount}</span>
               </div>
             </div>
 
-            {/* GCash Quick Payment Box if GCash selected */}
+            {/* Admin QR Code Scan-to-Pay Container */}
             {confirmedBooking.payment_method === 'GCash' && (
-              <div className="bg-blue-950/40 border border-blue-800/50 p-4 rounded-2xl text-left space-y-2">
-                <div className="flex items-center gap-2 text-blue-400 font-bold text-xs">
+              <div className="bg-blue-950/40 border border-blue-800/50 p-5 rounded-2xl text-center space-y-3">
+                <div className="flex items-center justify-center gap-2 text-blue-400 font-bold text-xs">
                   <QrCode className="w-4 h-4" />
-                  <span>GCash Payment Instructions (BEST Inc. Balamban)</span>
+                  <span>Scan QR Code to Pay via GCash</span>
                 </div>
-                <p className="text-slate-300 text-xs">
-                  Palihug i-send ang <strong>₱{confirmedBooking.total_amount}</strong> sa GCash account sa Balamban BEST Inc.:
-                </p>
-                <div className="bg-slate-900 p-2.5 rounded-xl border border-slate-800 text-xs font-mono text-white flex justify-between">
-                  <span>GCash No: <strong>0917-888-9900</strong></span>
-                  <span className="text-blue-400">Account: BEST INC.</span>
+
+                <div className="w-40 h-40 bg-white p-2.5 rounded-2xl mx-auto shadow-xl border-2 border-lime-500">
+                  <img
+                    src={adminSettings.qr_code_url}
+                    alt="Official Payment QR Code"
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+
+                <div>
+                  <p className="text-xs font-mono font-bold text-lime-400">{adminSettings.gcash_number}</p>
+                  <p className="text-xs font-bold text-white">{adminSettings.gcash_name}</p>
+                  <p className="text-[11px] text-slate-400 mt-1">Palihug i-send ang <strong>₱{confirmedBooking.total_amount}</strong> ug i-pakita ang Ref No. inig abot sa venue.</p>
                 </div>
               </div>
             )}
@@ -254,36 +265,37 @@ export default function BookingModal({ court, onClose, onBookingSuccess }: Booki
               </div>
             </div>
 
-            {/* 2. Time Slot Selector */}
+            {/* 2. Time Slot Selector (Per Hour) */}
             <div>
               <div className="flex items-center justify-between mb-2">
                 <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
                   <Clock className="w-4 h-4 text-lime-400" />
-                  2. Select Time Slot (1 Hour Duration):
+                  2. Select Hourly Time Slot (Sample: 6:00 AM - 7:00 AM):
                 </label>
                 {loadingSlots && <span className="text-[11px] text-lime-400 flex items-center gap-1"><Loader2 className="w-3 h-3 animate-spin" /> Checking slots...</span>}
               </div>
 
-              <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
-                {TIME_SLOTS.map((slot) => {
-                  const isBooked = bookedSlots.includes(slot);
-                  const isSelected = selectedSlot === slot;
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {HOURLY_SLOTS.map((slot) => {
+                  const isBooked = bookedSlots.includes(slot.startTime);
+                  const isSelected = selectedSlot.startTime === slot.startTime;
 
                   return (
                     <button
-                      key={slot}
+                      key={slot.id}
                       type="button"
                       disabled={isBooked}
                       onClick={() => setSelectedSlot(slot)}
-                      className={`py-2 rounded-xl text-xs font-mono font-bold transition-all border ${
+                      className={`p-2.5 rounded-xl text-xs font-semibold text-left transition-all border ${
                         isBooked
-                          ? 'bg-slate-950 border-slate-800 text-slate-600 line-through cursor-not-allowed'
+                          ? 'bg-slate-950 border-slate-800 text-slate-600 line-through cursor-not-allowed opacity-60'
                           : isSelected
                           ? 'bg-lime-500 text-slate-950 border-lime-400 shadow-md font-extrabold'
-                          : 'bg-slate-950 border-slate-800 text-slate-200 hover:border-lime-500/40'
+                          : 'bg-slate-950 border-slate-800 text-slate-200 hover:border-lime-500/50'
                       }`}
                     >
-                      {slot}
+                      <div className="font-bold text-[11px] tracking-tight">{slot.label}</div>
+                      <div className="text-[10px] opacity-75">{isBooked ? 'Booked' : 'Available'}</div>
                     </button>
                   );
                 })}
@@ -396,7 +408,7 @@ export default function BookingModal({ court, onClose, onBookingSuccess }: Booki
               </div>
             </div>
 
-            {/* 5. Payment Method & Summary */}
+            {/* 5. Payment Option & Summary */}
             <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-slate-300">Payment Option:</span>
@@ -404,21 +416,14 @@ export default function BookingModal({ court, onClose, onBookingSuccess }: Booki
                   <button
                     type="button"
                     onClick={() => setPaymentMethod('GCash')}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-bold transition ${
+                    className={`px-3 py-1 rounded-lg text-xs font-bold transition ${
                       paymentMethod === 'GCash' ? 'bg-blue-600 text-white' : 'bg-slate-900 text-slate-400'
                     }`}
-                  >GCash</button>
-                  <button
-                    type="button"
-                    onClick={() => setPaymentMethod('Maya')}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-bold transition ${
-                      paymentMethod === 'Maya' ? 'bg-emerald-600 text-white' : 'bg-slate-900 text-slate-400'
-                    }`}
-                  >Maya</button>
+                  >GCash QR</button>
                   <button
                     type="button"
                     onClick={() => setPaymentMethod('Pay at Court')}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-bold transition ${
+                    className={`px-3 py-1 rounded-lg text-xs font-bold transition ${
                       paymentMethod === 'Pay at Court' ? 'bg-amber-600 text-white' : 'bg-slate-900 text-slate-400'
                     }`}
                   >Pay at Venue</button>
@@ -427,8 +432,8 @@ export default function BookingModal({ court, onClose, onBookingSuccess }: Booki
 
               <div className="border-t border-slate-800 pt-2 flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-bold text-white">Total Amount Due:</p>
-                  <p className="text-[11px] text-slate-400">Court rate + add-ons included</p>
+                  <p className="text-xs font-bold text-white">Selected Slot & Total:</p>
+                  <p className="text-[11px] text-lime-400 font-semibold">{selectedSlot.label}</p>
                 </div>
                 <div className="text-xl font-black text-lime-400 font-mono">
                   ₱{totalPrice}

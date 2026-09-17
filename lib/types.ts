@@ -26,23 +26,25 @@ export interface Booking {
   customer_email: string;
   customer_phone: string;
   booking_date: string; // YYYY-MM-DD
-  start_time: string;   // HH:00
-  end_time: string;     // HH:00
+  time_slot_label: string; // e.g. "6:00 AM - 7:00 AM"
+  start_time: string;   // 06:00
+  end_time: string;     // 07:00
   total_amount: number;
   equipment_rentals: EquipmentRental[];
   payment_method: 'GCash' | 'Maya' | 'Pay at Court';
+  payment_status: 'Pending' | 'Paid' | 'Verified';
   status: 'Confirmed' | 'Pending' | 'Completed' | 'Cancelled';
   notes?: string;
   created_at: string;
 }
 
-export type ViewportMode = 'responsive' | 'desktop' | 'tablet' | 'mobile';
-
-export interface ViewportPreset {
-  id: ViewportMode;
-  name: string;
-  width: number | '100%';
-  height: number | 'auto';
-  label: string;
-  iconName: string;
+export interface AdminSettings {
+  gcash_number: string;
+  gcash_name: string;
+  qr_code_url: string;
+  maya_number: string;
+  maya_name: string;
+  maya_qr_url: string;
 }
+
+export type ViewportMode = 'responsive' | 'desktop' | 'tablet' | 'mobile';
