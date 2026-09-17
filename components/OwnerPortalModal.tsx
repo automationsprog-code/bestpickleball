@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Booking, AdminSettings, Court } from '@/lib/types';
 import { getAllUserBookings, updateBookingStatus, getAdminSettings, updateAdminSettings, getCourts, createCourt, updateCourtDetails, updateCourtStatus } from '@/lib/supabase';
 import { DEFAULT_ADMIN_SETTINGS } from '@/lib/data';
-import { X, ShieldCheck, QrCode, Search, User, CheckCircle2, Save, RefreshCw, AlertCircle, Lock, KeyRound, LogOut, Plus, Trophy, ToggleLeft, ToggleRight, Edit3, DollarSign } from 'lucide-react';
+import { X, ShieldCheck, QrCode, Search, User, CheckCircle2, Save, RefreshCw, AlertCircle, Lock, KeyRound, LogOut, Plus, Trophy, ToggleLeft, ToggleRight, Edit3, DollarSign, Image as ImageIcon, Upload } from 'lucide-react';
 
 interface OwnerPortalModalProps {
   onClose: () => void;
@@ -37,13 +37,16 @@ export default function OwnerPortalModal({ onClose, onCourtsUpdated }: OwnerPort
   const [newCourtImageUrl, setNewCourtImageUrl] = useState('https://images.unsplash.com/photo-1599586120429-48281b6f0eca?auto=format&fit=crop&w=1200&q=80');
   const [creatingCourt, setCreatingCourt] = useState(false);
 
-  // Edit Court / Rate state
+  // Edit Court / Rate / Image state
   const [editingCourt, setEditingCourt] = useState<Court | null>(null);
   const [editRate, setEditRate] = useState<number>(350);
   const [editName, setEditName] = useState('');
+  const [editType, setEditType] = useState<Court['type']>('Indoor Covered');
+  const [editSurface, setEditSurface] = useState('');
+  const [editImageUrl, setEditImageUrl] = useState('');
   const [savingEdit, setSavingEdit] = useState(false);
 
-  // Settings state
+  // Settings state (QR Code Upload)
   const [settings, setSettings] = useState<AdminSettings>(DEFAULT_ADMIN_SETTINGS);
   const [savingSettings, setSavingSettings] = useState(false);
   const [saveSuccessMsg, setSaveSuccessMsg] = useState(false);
@@ -84,16 +87,63 @@ export default function OwnerPortalModal({ onClose, onCourtsUpdated }: OwnerPort
     loadData();
   };
 
+  // Toggle Active / Inactive
   const handleToggleCourtActive = async (courtId: string, currentActive: boolean) => {
     await updateCourtStatus(courtId, !currentActive);
     await loadData();
     if (onCourtsUpdated) onCourtsUpdated();
   };
 
+  // Open Edit Modal
   const openEditModal = (court: Court) => {
     setEditingCourt(court);
     setEditRate(court.hourly_rate);
     setEditName(court.name);
+    setEditType(court.type);
+    setEditSurface(court.surface || '');
+    setEditImageUrl(court.image_url || '');
+  };
+
+  // Handle Uploading Court Image File
+  const handleCourtImageFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (typeof reader.result === 'string') {
+          setEditImageUrl(reader.result);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Handle Uploading New Court Image File
+  const handleNewCourtImageFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (typeof reader.result === 'string') {
+          setNewCourtImageUrl(reader.result);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Handle Uploading QR Code Image File
+  const handleQRImageFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (typeof reader.result === 'string') {
+          setSettings({ ...settings, qr_code_url: reader.result });
+        }
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleSaveCourtEdit = async (e: React.FormEvent) => {
@@ -104,14 +154,17 @@ export default function OwnerPortalModal({ onClose, onCourtsUpdated }: OwnerPort
     try {
       await updateCourtDetails(editingCourt.id, {
         name: editName,
-        hourly_rate: Number(editRate)
+        type: editType,
+        surface: editSurface,
+        hourly_rate: Number(editRate),
+        image_url: editImageUrl
       });
       setEditingCourt(null);
       await loadData();
       if (onCourtsUpdated) onCourtsUpdated();
-      alert('Na-update na ang Court Price per hour!');
+      alert('Na-update na ang Court details & picture!');
     } catch (err) {
-      alert('Failed to update court rate.');
+      alert('Failed to update court details.');
     } finally {
       setSavingEdit(false);
     }
@@ -142,7 +195,7 @@ export default function OwnerPortalModal({ onClose, onCourtsUpdated }: OwnerPort
       setNewCourtName('');
       await loadData();
       if (onCourtsUpdated) onCourtsUpdated();
-      alert('Court created successfully!');
+      alert('New Court created successfully!');
     } catch (err) {
       alert('Failed to create court.');
     } finally {
@@ -430,13 +483,13 @@ export default function OwnerPortalModal({ onClose, onCourtsUpdated }: OwnerPort
               </div>
             )}
 
-            {/* Tab 2: Manage & Add Courts / Edit Price */}
+            {/* Tab 2: Manage & Add Courts / Edit Price & Pictures & Active Toggle */}
             {activeTab === 'courts' && (
               <div className="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-sm font-bold text-slate-900">Courts & Hourly Pricing Management:</h3>
-                    <p className="text-xs text-slate-500">Maka-edit ka sa price per hour sa Court 1 o maka-add ug Court 2 para sa Balamban venue.</p>
+                    <h3 className="text-sm font-bold text-slate-900">Courts, Photos & Active Status Management:</h3>
+                    <p className="text-xs text-slate-500">I-click ang <strong>Active/Inactive toggle button</strong> aron maka-enable/disable sa court, o edit price/picture.</p>
                   </div>
                   <button
                     onClick={() => setShowAddCourtModal(true)}
@@ -447,16 +500,23 @@ export default function OwnerPortalModal({ onClose, onCourtsUpdated }: OwnerPort
                   </button>
                 </div>
 
-                {/* Courts Grid with Edit Price Button */}
+                {/* Courts Grid with Active Toggle & Photo Uploader */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {courts.map((court) => (
                     <div key={court.id} className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3 shadow-xs">
                       <div className="flex items-start justify-between">
-                        <div>
-                          <span className="text-[10px] font-bold bg-lime-100 text-lime-800 px-2 py-0.5 rounded-full border border-lime-300">
-                            {court.type}
-                          </span>
-                          <h4 className="text-sm font-black text-slate-900 mt-1">{court.name}</h4>
+                        <div className="flex items-center space-x-3">
+                          <img
+                            src={court.image_url}
+                            alt={court.name}
+                            className="w-14 h-14 rounded-xl object-cover border border-slate-300 shadow-xs"
+                          />
+                          <div>
+                            <span className="text-[10px] font-bold bg-lime-100 text-lime-800 px-2 py-0.5 rounded-full border border-lime-300">
+                              {court.type}
+                            </span>
+                            <h4 className="text-sm font-black text-slate-900 mt-1">{court.name}</h4>
+                          </div>
                         </div>
 
                         <span className="text-base font-black text-lime-800 font-mono bg-white px-2.5 py-1 rounded-xl border border-slate-200">
@@ -472,32 +532,44 @@ export default function OwnerPortalModal({ onClose, onCourtsUpdated }: OwnerPort
                           className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-lime-600 text-white hover:text-slate-950 text-xs font-bold transition flex items-center gap-1.5 shadow-xs"
                         >
                           <Edit3 className="w-3.5 h-3.5" />
-                          <span>Edit Price per Hour (₱)</span>
+                          <span>Edit Price & Picture</span>
                         </button>
 
+                        {/* Active / Inactive Toggle Button */}
                         <button
                           onClick={() => handleToggleCourtActive(court.id, court.is_active)}
-                          className={`p-1.5 rounded-xl text-xs font-bold flex items-center gap-1 transition ${
-                            court.is_active ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-slate-200 text-slate-600'
+                          className={`px-3 py-1.5 rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition shadow-xs ${
+                            court.is_active 
+                              ? 'bg-emerald-100 text-emerald-800 border border-emerald-400 hover:bg-emerald-200' 
+                              : 'bg-rose-100 text-rose-800 border border-rose-300 hover:bg-rose-200'
                           }`}
-                          title="Toggle court availability"
+                          title="Click to toggle Active or Inactive status"
                         >
-                          {court.is_active ? <ToggleRight className="w-5 h-5 text-emerald-600" /> : <ToggleLeft className="w-5 h-5 text-slate-400" />}
-                          <span>{court.is_active ? 'Active' : 'Disabled'}</span>
+                          {court.is_active ? (
+                            <>
+                              <ToggleRight className="w-5 h-5 text-emerald-600" />
+                              <span>Active</span>
+                            </>
+                          ) : (
+                            <>
+                              <ToggleLeft className="w-5 h-5 text-rose-500" />
+                              <span>Inactive (Disabled)</span>
+                            </>
+                          )}
                         </button>
                       </div>
                     </div>
                   ))}
                 </div>
 
-                {/* Edit Price Modal Popup */}
+                {/* Edit Price & Picture Modal Popup */}
                 {editingCourt && (
                   <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
-                    <form onSubmit={handleSaveCourtEdit} className="bg-white border border-slate-200 rounded-3xl p-6 max-w-md w-full space-y-4 shadow-2xl text-left">
+                    <form onSubmit={handleSaveCourtEdit} className="bg-white border border-slate-200 rounded-3xl p-6 max-w-lg w-full space-y-4 shadow-2xl text-left">
                       <div className="flex items-center justify-between border-b border-slate-200 pb-3">
                         <h4 className="text-base font-black text-slate-900 flex items-center gap-1.5">
-                          <DollarSign className="w-5 h-5 text-lime-600" />
-                          <span>Edit Court Price & Name</span>
+                          <Edit3 className="w-5 h-5 text-lime-600" />
+                          <span>Edit Court Details & Picture</span>
                         </h4>
                         <button type="button" onClick={() => setEditingCourt(null)} className="p-1 rounded-lg hover:bg-slate-200">
                           <X className="w-5 h-5" />
@@ -505,7 +577,7 @@ export default function OwnerPortalModal({ onClose, onCourtsUpdated }: OwnerPort
                       </div>
 
                       <div>
-                        <label className="text-xs font-bold text-slate-800 block mb-1">Court Name</label>
+                        <label className="text-xs font-bold text-slate-800 block mb-1">Court Name *</label>
                         <input
                           type="text"
                           required
@@ -515,20 +587,59 @@ export default function OwnerPortalModal({ onClose, onCourtsUpdated }: OwnerPort
                         />
                       </div>
 
-                      <div>
-                        <label className="text-xs font-bold text-slate-800 block mb-1">Price Per Hour (₱) *</label>
-                        <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 font-bold text-xs">₱</span>
-                          <input
-                            type="number"
-                            required
-                            min={50}
-                            value={editRate}
-                            onChange={(e) => setEditRate(Number(e.target.value))}
-                            className="w-full bg-slate-50 border border-slate-300 rounded-xl pl-8 pr-3 py-2 text.xs font-bold text-slate-900 focus:outline-none focus:border-lime-600"
-                          />
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-xs font-bold text-slate-800 block mb-1">Price Per Hour (₱) *</label>
+                          <div className="relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 font-bold text-xs">₱</span>
+                            <input
+                              type="number"
+                              required
+                              min={50}
+                              value={editRate}
+                              onChange={(e) => setEditRate(Number(e.target.value))}
+                              className="w-full bg-slate-50 border border-slate-300 rounded-xl pl-8 pr-3 py-2 text-xs font-bold text-slate-900 focus:outline-none focus:border-lime-600"
+                            />
+                          </div>
                         </div>
-                        <p className="text-[10px] text-slate-500 mt-1 font-medium">Automatic kining mo-update sa rate nga ipakita sa mga customer sa booking page.</p>
+
+                        <div>
+                          <label className="text-xs font-bold text-slate-800 block mb-1">Court Type</label>
+                          <select
+                            value={editType}
+                            onChange={(e) => setEditType(e.target.value as Court['type'])}
+                            className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-lime-600 font-medium"
+                          >
+                            <option value="Indoor Covered">Indoor Covered</option>
+                            <option value="Outdoor Pro">Outdoor Pro</option>
+                            <option value="VIP Covered">VIP Covered</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Photo Uploader */}
+                      <div>
+                        <label className="text-xs font-bold text-slate-800 block mb-1">Upload / Change Court Picture *</label>
+                        <div className="flex items-center space-x-3 mb-2">
+                          {editImageUrl && (
+                            <img src={editImageUrl} alt="Preview" className="w-16 h-16 rounded-xl object-cover border border-slate-300 shadow-xs" />
+                          )}
+                          <div className="flex-1 space-y-2">
+                            <label className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-300 text-xs font-bold cursor-pointer transition text-slate-800">
+                              <Upload className="w-4 h-4 text-lime-600" />
+                              <span>Choose Photo File...</span>
+                              <input type="file" accept="image/*" onChange={handleCourtImageFileUpload} className="hidden" />
+                            </label>
+                            <p className="text-[10px] text-slate-500 font-medium">O i-paste ang Image URL sa ubos:</p>
+                          </div>
+                        </div>
+                        <input
+                          type="text"
+                          value={editImageUrl}
+                          onChange={(e) => setEditImageUrl(e.target.value)}
+                          placeholder="https://..."
+                          className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-lime-600 font-medium"
+                        />
                       </div>
 
                       <div className="pt-2 flex justify-end space-x-2">
@@ -544,7 +655,7 @@ export default function OwnerPortalModal({ onClose, onCourtsUpdated }: OwnerPort
                           disabled={savingEdit}
                           className="px-5 py-2 bg-lime-500 hover:bg-lime-600 rounded-xl text-xs font-black text-slate-950 shadow-md"
                         >
-                          {savingEdit ? 'Saving...' : 'Save New Price'}
+                          {savingEdit ? 'Saving...' : 'Save Court Details'}
                         </button>
                       </div>
                     </form>
@@ -602,18 +713,14 @@ export default function OwnerPortalModal({ onClose, onCourtsUpdated }: OwnerPort
                       </div>
 
                       <div>
-                        <label className="text-xs font-bold text-slate-800 block mb-1">Surface Type</label>
-                        <input
-                          type="text"
-                          value={newCourtSurface}
-                          onChange={(e) => setNewCourtSurface(e.target.value)}
-                          placeholder="e.g. Pro-Grid Acrylic Surface"
-                          className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-lime-600"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="text-xs font-bold text-slate-800 block mb-1">Court Image URL</label>
+                        <label className="text-xs font-bold text-slate-800 block mb-1">Upload Court Picture</label>
+                        <div className="flex items-center space-x-2 mb-2">
+                          <label className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-300 text-xs font-bold cursor-pointer transition text-slate-800">
+                            <Upload className="w-4 h-4 text-lime-600" />
+                            <span>Select Photo File...</span>
+                            <input type="file" accept="image/*" onChange={handleNewCourtImageFileUpload} className="hidden" />
+                          </label>
+                        </div>
                         <input
                           type="text"
                           value={newCourtImageUrl}
@@ -661,8 +768,8 @@ export default function OwnerPortalModal({ onClose, onCourtsUpdated }: OwnerPort
                   {/* Form Inputs */}
                   <div className="space-y-4">
                     <div>
-                      <h3 className="text-sm font-bold text-slate-900 mb-1">GCash Account Details:</h3>
-                      <p className="text-xs text-slate-500 mb-3 font-medium">Mao kini ang ipakita sa customer inig booking aron maka scan-to-pay via GCash.</p>
+                      <h3 className="text-sm font-bold text-slate-900 mb-1">GCash Account Details & QR Code Upload:</h3>
+                      <p className="text-xs text-slate-500 mb-3 font-medium">I-upload ang imong GCash / Maya QR Code Image File o paste ang URL.</p>
                     </div>
 
                     <div>
@@ -690,18 +797,23 @@ export default function OwnerPortalModal({ onClose, onCourtsUpdated }: OwnerPort
                     </div>
 
                     <div>
-                      <label className="text-xs font-bold text-slate-800 block mb-1">GCash QR Code Image URL *</label>
-                      <input
-                        type="text"
-                        required
-                        value={settings.qr_code_url}
-                        onChange={(e) => setSettings({ ...settings, qr_code_url: e.target.value })}
-                        placeholder="https://..."
-                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-lime-600 font-medium"
-                      />
-                      <p className="text-[10px] text-slate-500 mt-1 font-medium">
-                        Tip: I-upload ang imong GCash QR code image sa Imgur o Supabase Storage ug i-paste ang URL diri.
-                      </p>
+                      <label className="text-xs font-bold text-slate-800 block mb-1">Upload QR Code Image File *</label>
+                      <div className="space-y-2">
+                        <label className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-300 text-xs font-bold cursor-pointer transition text-slate-800 shadow-xs">
+                          <Upload className="w-4 h-4 text-lime-600" />
+                          <span>Select QR Code Image File...</span>
+                          <input type="file" accept="image/*" onChange={handleQRImageFileUpload} className="hidden" />
+                        </label>
+                        <p className="text-[11px] text-slate-500 font-medium">O i-paste ang Image URL sa ubos:</p>
+                        <input
+                          type="text"
+                          required
+                          value={settings.qr_code_url}
+                          onChange={(e) => setSettings({ ...settings, qr_code_url: e.target.value })}
+                          placeholder="https://..."
+                          className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:border-lime-600 font-medium"
+                        />
+                      </div>
                     </div>
 
                     <div className="pt-2">
@@ -724,7 +836,7 @@ export default function OwnerPortalModal({ onClose, onCourtsUpdated }: OwnerPort
                       <span>Customer Scan-to-Pay Preview</span>
                     </div>
 
-                    <div className="w-48 h-48 bg-white p-3 rounded-2xl shadow-md border-4 border-lime-500 flex items-center justify-center">
+                    <div className="w-48 h-48 bg-white p-3 rounded-2xl shadow-md border-4 border-lime-500 flex items-center justify-center overflow-hidden">
                       <img
                         src={settings.qr_code_url}
                         alt="Payment QR Code Preview"
