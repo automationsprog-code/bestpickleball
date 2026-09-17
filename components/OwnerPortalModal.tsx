@@ -2,9 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { Booking, AdminSettings, Court } from '@/lib/types';
-import { getAllUserBookings, updateBookingStatus, getAdminSettings, updateAdminSettings, getCourts, createCourt, updateCourtStatus } from '@/lib/supabase';
+import { getAllUserBookings, updateBookingStatus, getAdminSettings, updateAdminSettings, getCourts, createCourt, updateCourtDetails, updateCourtStatus } from '@/lib/supabase';
 import { DEFAULT_ADMIN_SETTINGS } from '@/lib/data';
-import { X, ShieldCheck, QrCode, Search, User, CheckCircle2, Save, RefreshCw, AlertCircle, Lock, KeyRound, LogOut, Plus, Trophy, ToggleLeft, ToggleRight } from 'lucide-react';
+import { X, ShieldCheck, QrCode, Search, User, CheckCircle2, Save, RefreshCw, AlertCircle, Lock, KeyRound, LogOut, Plus, Trophy, ToggleLeft, ToggleRight, Edit3, DollarSign } from 'lucide-react';
 
 interface OwnerPortalModalProps {
   onClose: () => void;
@@ -30,12 +30,18 @@ export default function OwnerPortalModal({ onClose, onCourtsUpdated }: OwnerPort
   const [showAddCourtModal, setShowAddCourtModal] = useState(false);
   const [newCourtName, setNewCourtName] = useState('');
   const [newCourtType, setNewCourtType] = useState<Court['type']>('Indoor Covered');
-  const [newCourtRate, setNewCourtRate] = useState<number>(300);
+  const [newCourtRate, setNewCourtRate] = useState<number>(350);
   const [newCourtSurface, setNewCourtSurface] = useState('Tournament Acrylic Surface');
   const [newCourtDesc, setNewCourtDesc] = useState('');
   const [newCourtFeatures, setNewCourtFeatures] = useState('Covered Roof, LED Lighting, Net System');
   const [newCourtImageUrl, setNewCourtImageUrl] = useState('https://images.unsplash.com/photo-1599586120429-48281b6f0eca?auto=format&fit=crop&w=1200&q=80');
   const [creatingCourt, setCreatingCourt] = useState(false);
+
+  // Edit Court / Rate state
+  const [editingCourt, setEditingCourt] = useState<Court | null>(null);
+  const [editRate, setEditRate] = useState<number>(350);
+  const [editName, setEditName] = useState('');
+  const [savingEdit, setSavingEdit] = useState(false);
 
   // Settings state
   const [settings, setSettings] = useState<AdminSettings>(DEFAULT_ADMIN_SETTINGS);
@@ -82,6 +88,33 @@ export default function OwnerPortalModal({ onClose, onCourtsUpdated }: OwnerPort
     await updateCourtStatus(courtId, !currentActive);
     await loadData();
     if (onCourtsUpdated) onCourtsUpdated();
+  };
+
+  const openEditModal = (court: Court) => {
+    setEditingCourt(court);
+    setEditRate(court.hourly_rate);
+    setEditName(court.name);
+  };
+
+  const handleSaveCourtEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingCourt) return;
+
+    setSavingEdit(true);
+    try {
+      await updateCourtDetails(editingCourt.id, {
+        name: editName,
+        hourly_rate: Number(editRate)
+      });
+      setEditingCourt(null);
+      await loadData();
+      if (onCourtsUpdated) onCourtsUpdated();
+      alert('Na-update na ang Court Price per hour!');
+    } catch (err) {
+      alert('Failed to update court rate.');
+    } finally {
+      setSavingEdit(false);
+    }
   };
 
   const handleCreateCourt = async (e: React.FormEvent) => {
@@ -156,7 +189,7 @@ export default function OwnerPortalModal({ onClose, onCourtsUpdated }: OwnerPort
               <h2 className="text-base font-black text-slate-900 tracking-tight">
                 Pickleball Owner & Admin Portal
               </h2>
-              <p className="text-[11px] text-slate-500 font-medium">BEST Inc. Balamban Court Reservations, Courts & QR Management</p>
+              <p className="text-[11px] text-slate-500 font-medium">BEST Inc. Balamban Court Reservations, Rates & QR Management</p>
             </div>
           </div>
 
@@ -266,8 +299,8 @@ export default function OwnerPortalModal({ onClose, onCourtsUpdated }: OwnerPort
                     : 'border-transparent text-slate-500 hover:text-slate-800'
                 }`}
               >
-                <Trophy className="w-4 h-4" />
-                <span>Manage & Add Courts ({courts.length})</span>
+                <DollarSign className="w-4 h-4" />
+                <span>Edit Price / Manage Courts ({courts.length})</span>
               </button>
 
               <button
@@ -397,49 +430,126 @@ export default function OwnerPortalModal({ onClose, onCourtsUpdated }: OwnerPort
               </div>
             )}
 
-            {/* Tab 2: Manage & Add Courts */}
+            {/* Tab 2: Manage & Add Courts / Edit Price */}
             {activeTab === 'courts' && (
               <div className="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-sm font-bold text-slate-900">Balamban Courts List:</h3>
-                    <p className="text-xs text-slate-500">Maka-add ka og bag-ong courts (e.g. Court 2, Court 3) para magamit ug ma-book sa mga customer sa future.</p>
+                    <h3 className="text-sm font-bold text-slate-900">Courts & Hourly Pricing Management:</h3>
+                    <p className="text-xs text-slate-500">Maka-edit ka sa price per hour sa Court 1 o maka-add ug Court 2 para sa Balamban venue.</p>
                   </div>
                   <button
                     onClick={() => setShowAddCourtModal(true)}
                     className="px-3.5 py-2 rounded-xl bg-lime-500 hover:bg-lime-600 text-slate-950 font-black text-xs transition flex items-center gap-1.5 shadow-md"
                   >
                     <Plus className="w-4 h-4" />
-                    <span>Add New Court (e.g. Court 2)</span>
+                    <span>Add New Court</span>
                   </button>
                 </div>
 
-                {/* Courts Grid */}
+                {/* Courts Grid with Edit Price Button */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {courts.map((court) => (
-                    <div key={court.id} className="bg-slate-50 p-4 rounded-2xl border border-slate-200 flex items-start justify-between space-x-3">
-                      <div className="space-y-1 flex-1">
-                        <span className="text-[10px] font-bold bg-lime-100 text-lime-800 px-2 py-0.5 rounded-full border border-lime-300">
-                          {court.type}
+                    <div key={court.id} className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3 shadow-xs">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <span className="text-[10px] font-bold bg-lime-100 text-lime-800 px-2 py-0.5 rounded-full border border-lime-300">
+                            {court.type}
+                          </span>
+                          <h4 className="text-sm font-black text-slate-900 mt-1">{court.name}</h4>
+                        </div>
+
+                        <span className="text-base font-black text-lime-800 font-mono bg-white px-2.5 py-1 rounded-xl border border-slate-200">
+                          ₱{court.hourly_rate} <span className="text-[10px] font-normal text-slate-500">/ hr</span>
                         </span>
-                        <h4 className="text-sm font-black text-slate-900 mt-1">{court.name}</h4>
-                        <p className="text-xs text-lime-700 font-bold">₱{court.hourly_rate} / hour</p>
-                        <p className="text-[11px] text-slate-500 line-clamp-2">{court.description}</p>
                       </div>
 
-                      <button
-                        onClick={() => handleToggleCourtActive(court.id, court.is_active)}
-                        className={`p-2 rounded-xl text-xs font-bold flex items-center gap-1 transition ${
-                          court.is_active ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-slate-200 text-slate-600'
-                        }`}
-                        title="Toggle active status"
-                      >
-                        {court.is_active ? <ToggleRight className="w-5 h-5 text-emerald-600" /> : <ToggleLeft className="w-5 h-5 text-slate-400" />}
-                        <span>{court.is_active ? 'Active' : 'Disabled'}</span>
-                      </button>
+                      <p className="text-[11px] text-slate-600 line-clamp-2 font-medium">{court.description}</p>
+
+                      <div className="pt-2 border-t border-slate-200 flex items-center justify-between">
+                        <button
+                          onClick={() => openEditModal(court)}
+                          className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-lime-600 text-white hover:text-slate-950 text-xs font-bold transition flex items-center gap-1.5 shadow-xs"
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                          <span>Edit Price per Hour (₱)</span>
+                        </button>
+
+                        <button
+                          onClick={() => handleToggleCourtActive(court.id, court.is_active)}
+                          className={`p-1.5 rounded-xl text-xs font-bold flex items-center gap-1 transition ${
+                            court.is_active ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-slate-200 text-slate-600'
+                          }`}
+                          title="Toggle court availability"
+                        >
+                          {court.is_active ? <ToggleRight className="w-5 h-5 text-emerald-600" /> : <ToggleLeft className="w-5 h-5 text-slate-400" />}
+                          <span>{court.is_active ? 'Active' : 'Disabled'}</span>
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
+
+                {/* Edit Price Modal Popup */}
+                {editingCourt && (
+                  <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
+                    <form onSubmit={handleSaveCourtEdit} className="bg-white border border-slate-200 rounded-3xl p-6 max-w-md w-full space-y-4 shadow-2xl text-left">
+                      <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+                        <h4 className="text-base font-black text-slate-900 flex items-center gap-1.5">
+                          <DollarSign className="w-5 h-5 text-lime-600" />
+                          <span>Edit Court Price & Name</span>
+                        </h4>
+                        <button type="button" onClick={() => setEditingCourt(null)} className="p-1 rounded-lg hover:bg-slate-200">
+                          <X className="w-5 h-5" />
+                        </button>
+                      </div>
+
+                      <div>
+                        <label className="text-xs font-bold text-slate-800 block mb-1">Court Name</label>
+                        <input
+                          type="text"
+                          required
+                          value={editName}
+                          onChange={(e) => setEditName(e.target.value)}
+                          className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-lime-600 font-medium"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-xs font-bold text-slate-800 block mb-1">Price Per Hour (₱) *</label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 font-bold text-xs">₱</span>
+                          <input
+                            type="number"
+                            required
+                            min={50}
+                            value={editRate}
+                            onChange={(e) => setEditRate(Number(e.target.value))}
+                            className="w-full bg-slate-50 border border-slate-300 rounded-xl pl-8 pr-3 py-2 text.xs font-bold text-slate-900 focus:outline-none focus:border-lime-600"
+                          />
+                        </div>
+                        <p className="text-[10px] text-slate-500 mt-1 font-medium">Automatic kining mo-update sa rate nga ipakita sa mga customer sa booking page.</p>
+                      </div>
+
+                      <div className="pt-2 flex justify-end space-x-2">
+                        <button
+                          type="button"
+                          onClick={() => setEditingCourt(null)}
+                          className="px-4 py-2 bg-slate-200 hover:bg-slate-300 rounded-xl text-xs font-bold text-slate-700"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          disabled={savingEdit}
+                          className="px-5 py-2 bg-lime-500 hover:bg-lime-600 rounded-xl text-xs font-black text-slate-950 shadow-md"
+                        >
+                          {savingEdit ? 'Saving...' : 'Save New Price'}
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                )}
 
                 {/* Add New Court Modal Popup */}
                 {showAddCourtModal && (

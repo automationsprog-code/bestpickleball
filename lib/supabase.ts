@@ -61,23 +61,27 @@ export async function createCourt(newCourtData: Omit<Court, 'id'>): Promise<Cour
   return court;
 }
 
-export async function updateCourtStatus(id: string, is_active: boolean): Promise<boolean> {
+export async function updateCourtDetails(id: string, updates: Partial<Court>): Promise<boolean> {
   if (supabase) {
     try {
-      const { error } = await supabase.from('courts').update({ is_active }).eq('id', id);
+      const { error } = await supabase.from('courts').update(updates).eq('id', id);
       if (!error) return true;
     } catch (err) {
-      console.warn('Supabase update court error:', err);
+      console.warn('Supabase update court details error:', err);
     }
   }
 
   if (typeof window !== 'undefined') {
     const existing = await getCourts();
-    const updated = existing.map(c => c.id === id ? { ...c, is_active } : c);
+    const updated = existing.map(c => c.id === id ? { ...c, ...updates } : c);
     localStorage.setItem('balamban_pickleball_courts', JSON.stringify(updated));
     return true;
   }
   return false;
+}
+
+export async function updateCourtStatus(id: string, is_active: boolean): Promise<boolean> {
+  return updateCourtDetails(id, { is_active });
 }
 
 export async function getBookingsForDate(date: string): Promise<Booking[]> {
