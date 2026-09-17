@@ -20,7 +20,7 @@ export async function getCourts(): Promise<Court[]> {
   if (supabase) {
     try {
       const { data, error } = await supabase.from('courts').select('*').order('created_at', { ascending: true });
-      if (!error && data && data.length > 0) {
+      if (!error && data) {
         if (typeof window !== 'undefined') {
           localStorage.setItem('balamban_pickleball_courts', JSON.stringify(data));
         }
@@ -33,7 +33,9 @@ export async function getCourts(): Promise<Court[]> {
 
   if (typeof window !== 'undefined') {
     const local = localStorage.getItem('balamban_pickleball_courts');
-    if (local) return JSON.parse(local);
+    if (local !== null) {
+      return JSON.parse(local);
+    }
   }
   return INITIAL_COURTS;
 }
@@ -51,7 +53,8 @@ export async function createCourt(newCourtData: Omit<Court, 'id'>): Promise<Cour
       if (!error && data) {
         if (typeof window !== 'undefined') {
           const existing = await getCourts();
-          localStorage.setItem('balamban_pickleball_courts', JSON.stringify([...existing, data]));
+          const updated = [...existing.filter(c => c.id !== data.id), data];
+          localStorage.setItem('balamban_pickleball_courts', JSON.stringify(updated));
         }
         return data as Court;
       }
@@ -90,17 +93,12 @@ export async function updateCourtDetails(id: string, updates: Partial<Court>): P
 }
 
 export async function deleteCourt(id: string): Promise<boolean> {
+  let success = false;
+
   if (supabase) {
     try {
       const { error } = await supabase.from('courts').delete().eq('id', id);
-      if (!error) {
-        if (typeof window !== 'undefined') {
-          const existing = await getCourts();
-          const filtered = existing.filter(c => c.id !== id);
-          localStorage.setItem('balamban_pickleball_courts', JSON.stringify(filtered));
-        }
-        return true;
-      }
+      if (!error) success = true;
     } catch (err) {
       console.warn('Supabase delete court error:', err);
     }
@@ -110,9 +108,9 @@ export async function deleteCourt(id: string): Promise<boolean> {
     const existing = await getCourts();
     const filtered = existing.filter(c => c.id !== id);
     localStorage.setItem('balamban_pickleball_courts', JSON.stringify(filtered));
-    return true;
+    success = true;
   }
-  return false;
+  return success;
 }
 
 export async function updateCourtStatus(id: string, is_active: boolean): Promise<boolean> {

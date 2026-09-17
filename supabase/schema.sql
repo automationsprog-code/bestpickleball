@@ -50,6 +50,8 @@ CREATE TABLE IF NOT EXISTS public.settings (
   maya_number VARCHAR(100) DEFAULT '0917-888-9900',
   maya_name VARCHAR(255) DEFAULT 'BEST INC. BALAMBAN',
   maya_qr_url TEXT DEFAULT 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=MAYA_BALAMBAN_BEST_INC_09178889900',
+  opening_hour INTEGER DEFAULT 6,
+  closing_hour INTEGER DEFAULT 22,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -58,7 +60,7 @@ INSERT INTO public.settings (id, gcash_number, gcash_name, qr_code_url)
 VALUES ('default', '0917-888-9900', 'BEST INC. BALAMBAN', 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=GCASH_BALAMBAN_BEST_INC_09178889900')
 ON CONFLICT (id) DO NOTHING;
 
--- 4. INITIAL SAMPLE COURTS DATA
+-- 4. INITIAL SAMPLE COURT DATA (Court 1 Only)
 INSERT INTO public.courts (id, name, type, surface, hourly_rate, description, features, image_url)
 VALUES 
   (
@@ -81,6 +83,7 @@ ALTER TABLE public.settings ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Allow public read access to courts" ON public.courts FOR SELECT USING (true);
 CREATE POLICY "Allow public insert access to courts" ON public.courts FOR INSERT WITH CHECK (true);
 CREATE POLICY "Allow public update access to courts" ON public.courts FOR UPDATE USING (true);
+CREATE POLICY "Allow public delete access to courts" ON public.courts FOR DELETE USING (true);
 
 CREATE POLICY "Allow public read access to bookings" ON public.bookings FOR SELECT USING (true);
 CREATE POLICY "Allow public insert access to bookings" ON public.bookings FOR INSERT WITH CHECK (true);

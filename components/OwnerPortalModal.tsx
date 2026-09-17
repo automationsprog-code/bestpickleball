@@ -88,13 +88,17 @@ export default function OwnerPortalModal({ onClose, onCourtsUpdated }: OwnerPort
     loadData();
   };
 
-  // Delete Court Handler
+  // Immediate Optimistic Delete Court Handler
   const handleDeleteCourt = async (courtId: string, courtName: string) => {
     if (confirm(`Sigurado ka nga gusto nimo i-DELETE ang "${courtName}"?`)) {
+      // 1. Optimistically remove court from UI immediately
+      setCourts(prev => prev.filter(c => c.id !== courtId));
+
+      // 2. Perform deletion in Supabase & localStorage
       await deleteCourt(courtId);
-      await loadData();
+
+      // 3. Sync with parent homepage
       if (onCourtsUpdated) onCourtsUpdated();
-      alert('Court deleted successfully!');
     }
   };
 
@@ -558,11 +562,13 @@ export default function OwnerPortalModal({ onClose, onCourtsUpdated }: OwnerPort
 
                           {/* Delete Court Button */}
                           <button
+                            type="button"
                             onClick={() => handleDeleteCourt(court.id, court.name)}
-                            className="p-1.5 rounded-xl bg-rose-100 text-rose-700 hover:bg-rose-500 hover:text-white transition border border-rose-300"
-                            title="Delete this Court"
+                            className="p-2 rounded-xl bg-rose-100 text-rose-700 hover:bg-rose-600 hover:text-white transition border border-rose-300 flex items-center gap-1 font-bold text-xs shadow-xs cursor-pointer"
+                            title="Delete this Court permanently"
                           >
                             <Trash2 className="w-4 h-4" />
+                            <span>Delete</span>
                           </button>
                         </div>
 
