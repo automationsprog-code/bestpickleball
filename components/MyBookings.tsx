@@ -1,0 +1,133 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import { Booking } from '@/lib/types';
+import { getAllUserBookings } from '@/lib/supabase';
+import { Ticket, Calendar, Clock, MapPin, X, CheckCircle, AlertCircle, RefreshCw } from 'lucide-react';
+
+interface MyBookingsProps {
+  onClose: () => void;
+  onNewBookingClick: () => void;
+}
+
+export default function MyBookings({ onClose, onNewBookingClick }: MyBookingsProps) {
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchBookings = async () => {
+    setLoading(true);
+    try {
+      const data = await getAllUserBookings();
+      setBookings(data);
+    } catch (err) {
+      console.error('Failed to load user bookings:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchBookings();
+  }, []);
+
+  return (
+    <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex justify-end">
+      <div className="bg-slate-900 border-l border-slate-800 w-full max-w-md h-full flex flex-col shadow-2xl animate-in slide-in-from-right duration-300">
+        
+        {/* Drawer Header */}
+        <div className="bg-slate-950 px-6 py-4 border-b border-slate-800 flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <Ticket className="w-5 h-5 text-lime-400" />
+            <h2 className="text-base font-extrabold text-white tracking-tight">My Reservations</h2>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={fetchBookings}
+              className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300"
+              title="Refresh list"
+            >
+              <RefreshCw className="w-4 h-4" />
+            </button>
+
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+
+        {/* Drawer Content */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          {loading ? (
+            <div className="text-center py-12 text-slate-400 text-xs">Loading reservations...</div>
+          ) : bookings.length === 0 ? (
+            <div className="text-center py-12 space-y-3">
+              <Ticket className="w-12 h-12 text-slate-600 mx-auto" />
+              <p className="text-sm font-bold text-slate-300">Wala pa kay active court booking.</p>
+              <p className="text-xs text-slate-400">Pinduta ang button sa ubos aron maka-reserve og Pickleball court slot!</p>
+              <button
+                onClick={() => { onClose(); onNewBookingClick(); }}
+                className="mt-2 px-4 py-2 bg-lime-500 text-slate-950 font-bold text-xs rounded-xl"
+              >
+                Book Court Now
+              </button>
+            </div>
+          ) : (
+            bookings.map((booking) => (
+              <div
+                key={booking.id}
+                className="bg-slate-950 border border-slate-800 rounded-2xl p-4 space-y-3 relative hover:border-slate-700 transition"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-mono font-bold text-lime-400 bg-lime-500/10 px-2.5 py-0.5 rounded-full border border-lime-500/20">
+                    {booking.reference_no}
+                  </span>
+                  <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                    {booking.status}
+                  </span>
+                </div>
+
+                <div>
+                  <h4 className="text-sm font-extrabold text-white">
+                    {booking.court_name || 'Pickleball Court'}
+                  </h4>
+                  <p className="text-xs text-slate-300 mt-1 flex items-center gap-1.5">
+                    <Calendar className="w-3.5 h-3.5 text-lime-400" />
+                    <span>{booking.booking_date} ({booking.start_time} - {booking.end_time})</span>
+                  </p>
+                </div>
+
+                <div className="bg-slate-900 p-2.5 rounded-xl border border-slate-800/80 text-xs space-y-1 text-slate-400">
+                  <p><strong className="text-white">Customer:</strong> {booking.customer_name} ({booking.customer_phone})</p>
+                  <p><strong className="text-white">Payment:</strong> {booking.payment_method}</p>
+                  {booking.equipment_rentals && booking.equipment_rentals.length > 0 && (
+                    <p><strong className="text-white">Rentals:</strong> {booking.equipment_rentals.map(r => `${r.quantity}x ${r.name}`).join(', ')}</p>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between pt-1 border-t border-slate-800 text-xs font-mono font-bold">
+                  <span className="text-slate-400">Total Amount:</span>
+                  <span className="text-lime-400">₱{booking.total_amount}</span>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="bg-slate-950 p-4 border-t border-slate-800">
+          <button
+            onClick={() => { onClose(); onNewBookingClick(); }}
+            className="w-full py-3 bg-lime-500 hover:bg-lime-400 text-slate-950 font-black text-xs rounded-xl transition"
+          >
+            + BOOK ANOTHER COURT
+          </button>
+        </div>
+
+      </div>
+    </div>
+  );
+}
