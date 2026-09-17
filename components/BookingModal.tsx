@@ -212,7 +212,7 @@ export default function BookingModal({ court, onClose, onBookingSuccess }: Booki
                   <span>Scan QR Code to Pay via GCash</span>
                 </div>
 
-                <div className="w-40 h-40 bg-white p-2.5 rounded-2xl mx-auto shadow-md border-2 border-lime-500">
+                <div className="w-40 h-40 bg-white p-2.5 rounded-2xl mx-auto shadow-md border-2 border-lime-500 overflow-hidden">
                   <img
                     src={adminSettings.qr_code_url}
                     alt="Official Payment QR Code"
@@ -265,12 +265,12 @@ export default function BookingModal({ court, onClose, onBookingSuccess }: Booki
               </div>
             </div>
 
-            {/* 2. Time Slot Selector (Per Hour) */}
+            {/* 2. Time Slot Selector (Per Hour) with Explicit Booked / Available Indicator */}
             <div>
               <div className="flex items-center justify-between mb-2">
                 <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                   <Clock className="w-4 h-4 text-lime-600" />
-                  2. Select Hourly Time Slot:
+                  2. Select Hourly Time Slot (Booked slots are disabled):
                 </label>
                 {loadingSlots && <span className="text-[11px] text-lime-700 flex items-center gap-1 font-bold"><Loader2 className="w-3 h-3 animate-spin" /> Checking slots...</span>}
               </div>
@@ -288,14 +288,18 @@ export default function BookingModal({ court, onClose, onBookingSuccess }: Booki
                       onClick={() => setSelectedSlot(slot)}
                       className={`p-2.5 rounded-xl text-xs font-semibold text-left transition-all border ${
                         isBooked
-                          ? 'bg-slate-100 border-slate-200 text-slate-400 line-through cursor-not-allowed opacity-60'
+                          ? 'bg-rose-50/80 border-rose-200 text-rose-500 line-through cursor-not-allowed font-medium'
                           : isSelected
                           ? 'bg-lime-500 text-slate-950 border-lime-600 shadow-sm font-extrabold'
                           : 'bg-slate-50 border-slate-200 text-slate-800 hover:border-lime-500'
                       }`}
                     >
                       <div className="font-extrabold text-[11px] tracking-tight">{slot.label}</div>
-                      <div className="text-[10px] opacity-80 font-medium">{isBooked ? 'Booked' : 'Available'}</div>
+                      <div className={`text-[10px] font-bold mt-0.5 ${
+                        isBooked ? 'text-rose-600' : isSelected ? 'text-slate-950 font-black' : 'text-emerald-700'
+                      }`}>
+                        {isBooked ? '❌ TAKEN / BOOKED' : '✅ AVAILABLE'}
+                      </div>
                     </button>
                   );
                 })}
