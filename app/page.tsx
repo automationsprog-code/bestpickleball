@@ -11,7 +11,7 @@ import MyBookings from '@/components/MyBookings';
 import Footer from '@/components/Footer';
 import { Court, Booking } from '@/lib/types';
 import { getCourts, getAllUserBookings } from '@/lib/supabase';
-import { Trophy, Zap, Sparkles, ShieldCheck } from 'lucide-react';
+import { Trophy, Zap, Sparkles, ShieldCheck, AlertCircle } from 'lucide-react';
 
 export default function Home() {
   const [courts, setCourts] = useState<Court[]>([]);
@@ -44,7 +44,10 @@ export default function Home() {
     }
   };
 
-  const filteredCourts = courts.filter(court => {
+  // Filter ONLY ACTIVE COURTS for bookers/customers!
+  const activeCourtsForBookers = courts.filter(court => court.is_active !== false);
+
+  const filteredCourts = activeCourtsForBookers.filter(court => {
     if (activeFilter === 'All') return true;
     if (activeFilter === 'Indoor') return court.type === 'Indoor Covered';
     if (activeFilter === 'Outdoor') return court.type === 'Outdoor Pro';
@@ -106,15 +109,23 @@ export default function Home() {
         </div>
 
         {/* Court Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredCourts.map((court) => (
-            <CourtCard
-              key={court.id}
-              court={court}
-              onBookCourt={(c) => setSelectedCourtForBooking(c)}
-            />
-          ))}
-        </div>
+        {filteredCourts.length === 0 ? (
+          <div className="bg-slate-50 border border-slate-200 rounded-3xl p-10 text-center space-y-3">
+            <AlertCircle className="w-10 h-10 text-slate-400 mx-auto" />
+            <h3 className="text-lg font-bold text-slate-900">Walay active court sa karon.</h3>
+            <p className="text-xs text-slate-500 font-medium">Palihug tan-awa pag-usab unya o i-contact ang BEST Inc. Balamban management.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredCourts.map((court) => (
+              <CourtCard
+                key={court.id}
+                court={court}
+                onBookCourt={(c) => setSelectedCourtForBooking(c)}
+              />
+            ))}
+          </div>
+        )}
 
       </section>
 
