@@ -70,12 +70,12 @@ export const DEFAULT_ADMIN_SETTINGS: AdminSettings = {
 export const INITIAL_COURTS: Court[] = [
   {
     id: '11111111-1111-1111-1111-111111111111',
-    name: 'Court 1 - Championship Covered Court',
+    name: 'Court 1',
     type: 'Indoor Covered',
-    surface: 'Tournament Cushioned Acrylic Surface',
-    hourly_rate: 350,
-    description: 'Premier covered pickleball court equipped with high-performance LED lighting and official tournament court dimensions.',
-    features: ['Covered Roof Structure', 'High-Lumen LED Night Lights', 'Official Net System', 'Spectator Seating Lounge'],
+    surface: 'Tournament Acrylic Surface',
+    hourly_rate: 250,
+    description: 'Premier Indoor Covered court located at Balamban BEST Inc.',
+    features: ['Covered Roof', 'LED Lighting', 'Net System'],
     image_url: 'https://images.unsplash.com/photo-1599586120429-48281b6f0eca?auto=format&fit=crop&w=1200&q=80',
     is_active: true
   }

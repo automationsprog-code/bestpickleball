@@ -70,7 +70,7 @@ export default function HeroBanner({ onBookClick, onMapClick, settings }: HeroBa
                 <Trophy className="w-4 h-4" />
               </div>
               <div>
-                <p className="text-xs font-bold text-slate-900">4 Courts</p>
+                <p className="text-xs font-bold text-slate-900">Pickleball Courts</p>
                 <p className="text-[11px] text-slate-500 font-medium">Covered & Outdoor</p>
               </div>
             </div>

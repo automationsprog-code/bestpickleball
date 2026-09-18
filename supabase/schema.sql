@@ -80,12 +80,12 @@ INSERT INTO public.courts (id, name, type, surface, hourly_rate, description, fe
 VALUES 
   (
     '11111111-1111-1111-1111-111111111111',
-    'Court 1 - Championship Covered Court',
+    'Court 1',
     'Indoor Covered',
-    'Tournament Cushioned Acrylic Surface',
-    350.00,
-    'Premier covered pickleball court equipped with high-performance LED lighting and official tournament court dimensions.',
-    ARRAY['Covered Roof', 'LED Night Lighting', 'Official Net System', 'Spectator Seating'],
+    'Tournament Acrylic Surface',
+    250.00,
+    'Premier Indoor Covered court located at Balamban BEST Inc.',
+    ARRAY['Covered Roof', 'LED Lighting', 'Net System'],
     'https://images.unsplash.com/photo-1599586120429-48281b6f0eca?auto=format&fit=crop&w=1200&q=80'
   )
 ON CONFLICT (id) DO NOTHING;
