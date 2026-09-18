@@ -7,16 +7,21 @@ export interface HourlySlot {
   label: string;     // Display format e.g. "6:00 AM - 7:00 AM"
 }
 
-export function generateHourlySlots(startHour: number = 6, endHour: number = 22): HourlySlot[] {
+export function generateHourlySlots(startHour: number = 6, endHour: number = 24): HourlySlot[] {
   const slots: HourlySlot[] = [];
   for (let hour = startHour; hour < endHour; hour++) {
-    const sTime = `${hour < 10 ? '0' : ''}${hour}:00`;
+    const sHourNorm = hour % 24;
+    const sTime = `${sHourNorm < 10 ? '0' : ''}${sHourNorm}:00`;
     const nextHour = hour + 1;
-    const eTime = `${nextHour < 10 ? '0' : ''}${nextHour}:00`;
+    const eHourNorm = nextHour % 24;
+    const eTime = `${eHourNorm < 10 ? '0' : ''}${eHourNorm}:00`;
 
     const format12 = (h: number) => {
-      const ampm = h >= 12 ? 'PM' : 'AM';
-      const h12 = h % 12 === 0 ? 12 : h % 12;
+      const normalizedHour = h % 24;
+      if (normalizedHour === 0 && h > 0) return '12:00 Midnight';
+      if (normalizedHour === 0 && h === 0) return '12:00 AM';
+      const ampm = normalizedHour >= 12 ? 'PM' : 'AM';
+      const h12 = normalizedHour % 12 === 0 ? 12 : normalizedHour % 12;
       return `${h12}:00 ${ampm}`;
     };
 
@@ -31,7 +36,7 @@ export function generateHourlySlots(startHour: number = 6, endHour: number = 22)
   return slots;
 }
 
-export const HOURLY_SLOTS: HourlySlot[] = generateHourlySlots(6, 22);
+export const HOURLY_SLOTS: HourlySlot[] = generateHourlySlots(6, 24);
 
 export const DEFAULT_ADMIN_SETTINGS: AdminSettings = {
   gcash_number: '0917-888-9900',

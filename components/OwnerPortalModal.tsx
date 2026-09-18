@@ -888,9 +888,9 @@ export default function OwnerPortalModal({ onClose, onCourtsUpdated }: OwnerPort
                       </div>
 
                       <div>
-                        <label className="text-xs font-bold text-slate-800 block mb-1">Closing Hour (PM) *</label>
+                        <label className="text-xs font-bold text-slate-800 block mb-1">Closing Hour (PM/AM) *</label>
                         <select
-                          value={settings.closing_hour || 22}
+                          value={settings.closing_hour || 24}
                           onChange={(e) => setSettings({ ...settings, closing_hour: Number(e.target.value) })}
                           className="w-full bg-white border border-slate-300 rounded-xl px-2.5 py-1.5 text-xs text-slate-900 font-bold"
                         >
@@ -898,6 +898,9 @@ export default function OwnerPortalModal({ onClose, onCourtsUpdated }: OwnerPort
                           <option value={21}>9:00 PM</option>
                           <option value={22}>10:00 PM</option>
                           <option value={23}>11:00 PM</option>
+                          <option value={24}>12:00 Midnight</option>
+                          <option value={25}>1:00 AM (Next Day)</option>
+                          <option value={26}>2:00 AM (Next Day)</option>
                         </select>
                       </div>
                     </div>
