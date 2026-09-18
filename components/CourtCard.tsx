@@ -16,9 +16,12 @@ export default function CourtCard({ court, onBookCourt }: CourtCardProps) {
       {/* Court Image Banner */}
       <div className="relative h-48 sm:h-56 w-full bg-slate-100 overflow-hidden">
         <img
-          src={court.image_url}
+          src={court.image_url || 'https://images.unsplash.com/photo-1599586120429-48281b6f0eca?auto=format&fit=crop&w=1200&q=80'}
           alt={court.name}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          onError={(e) => {
+            (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1599586120429-48281b6f0eca?auto=format&fit=crop&w=1200&q=80';
+          }}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950/60 via-transparent to-black/20"></div>
 
