@@ -225,6 +225,49 @@ export async function updateCourtStatus(id: string, is_active: boolean): Promise
   return updateCourtDetails(id, { is_active });
 }
 
+function toDbBooking(b: Booking) {
+  return {
+    id: b.id,
+    reference_no: b.reference_no,
+    court_id: b.court_id || '11111111-1111-1111-1111-111111111111',
+    customer_name: b.customer_name,
+    customer_email: b.customer_email || 'customer@example.com',
+    customer_phone: b.customer_phone,
+    booking_date: b.booking_date,
+    start_time: b.start_time,
+    end_time: b.end_time,
+    total_amount: b.total_amount,
+    equipment_rentals: b.equipment_rentals || [],
+    payment_method: b.payment_method || 'GCash',
+    status: b.status || 'Confirmed',
+    notes: b.notes || '',
+    created_at: b.created_at || new Date().toISOString()
+  };
+}
+
+function fromDbBooking(dbItem: any): Booking {
+  const startTime = dbItem.start_time ? dbItem.start_time.substring(0, 5) : '06:00';
+  const endTime = dbItem.end_time ? dbItem.end_time.substring(0, 5) : '07:00';
+
+  const format12 = (timeStr: string) => {
+    const [hStr] = timeStr.split(':');
+    const h = parseInt(hStr, 10);
+    if (isNaN(h)) return timeStr;
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const h12 = h % 12 === 0 ? 12 : h % 12;
+    return `${h12}:00 ${ampm}`;
+  };
+
+  return {
+    ...dbItem,
+    start_time: startTime,
+    end_time: endTime,
+    court_name: dbItem.court_name || 'Court 1',
+    time_slot_label: dbItem.time_slot_label || `${format12(startTime)} - ${format12(endTime)}`,
+    payment_status: dbItem.payment_status || 'Paid',
+  };
+}
+
 export async function createBooking(newBooking: Omit<Booking, 'id' | 'created_at'>): Promise<Booking> {
   const generatedId = generateValidUUID();
   const created_at = new Date().toISOString();
@@ -247,20 +290,20 @@ export async function createBooking(newBooking: Omit<Booking, 'id' | 'created_at
     }
   }
 
-  // 2. Try inserting into Supabase with FK fallback
+  // 2. Try inserting into Supabase with sanitized payload
   if (supabase) {
     try {
-      const { data, error } = await supabase.from('bookings').insert([booking]).select().single();
+      const payload = toDbBooking(booking);
+      const { data, error } = await supabase.from('bookings').insert([payload]).select().single();
       if (error) {
         console.warn('Supabase insert booking warning:', error);
-        // If FK constraint error (23503), retry inserting without rigid court_id so booking is ALWAYS saved to Supabase!
         if (error.code === '23503') {
-          const fallbackBooking = { ...booking, court_id: undefined };
-          const { data: fbData } = await supabase.from('bookings').insert([fallbackBooking]).select().single();
-          if (fbData) return fbData as Booking;
+          const fallbackPayload = { ...payload, court_id: null };
+          const { data: fbData } = await supabase.from('bookings').insert([fallbackPayload]).select().single();
+          if (fbData) return fromDbBooking(fbData);
         }
       } else if (data) {
-        return data as Booking;
+        return fromDbBooking(data);
       }
     } catch (err) {
       console.warn('Supabase insert booking error, stored locally:', err);
@@ -271,10 +314,16 @@ export async function createBooking(newBooking: Omit<Booking, 'id' | 'created_at
 }
 
 export async function getAllUserBookings(): Promise<Booking[]> {
-  let localBookings: Booking[] = INITIAL_BOOKINGS;
+  let localBookings: Booking[] = [];
   if (typeof window !== 'undefined') {
     const local = localStorage.getItem('balamban_pickleball_bookings');
-    if (local) localBookings = JSON.parse(local);
+    if (local) {
+      try {
+        localBookings = JSON.parse(local);
+      } catch (e) {
+        console.error(e);
+      }
+    }
   }
 
   let remoteBookings: Booking[] = [];
@@ -282,7 +331,20 @@ export async function getAllUserBookings(): Promise<Booking[]> {
     try {
       const { data, error } = await supabase.from('bookings').select('*').order('created_at', { ascending: false });
       if (!error && data) {
-        remoteBookings = data as Booking[];
+        remoteBookings = data.map(fromDbBooking);
+
+        // Auto-sync any unsynced local bookings to Supabase
+        const remoteRefs = new Set(remoteBookings.map(r => r.reference_no || r.id));
+        const unsynced = localBookings.filter(l => (l.id || l.reference_no) && !remoteRefs.has(l.reference_no) && !remoteRefs.has(l.id));
+        
+        if (unsynced.length > 0) {
+          const payloadList = unsynced.map(toDbBooking);
+          const { error: syncError } = await supabase.from('bookings').insert(payloadList);
+          if (!syncError) {
+            const { data: refreshed } = await supabase.from('bookings').select('*').order('created_at', { ascending: false });
+            if (refreshed) remoteBookings = refreshed.map(fromDbBooking);
+          }
+        }
       }
     } catch (err) {
       console.warn('Supabase fetch all bookings error:', err);
@@ -291,8 +353,13 @@ export async function getAllUserBookings(): Promise<Booking[]> {
 
   // Merge local & remote bookings, avoiding duplicates by id or reference_no
   const mergedMap = new Map<string, Booking>();
-  localBookings.forEach(b => mergedMap.set(b.id || b.reference_no, b));
   remoteBookings.forEach(b => mergedMap.set(b.id || b.reference_no, b));
+  localBookings.forEach(b => {
+    const key = b.id || b.reference_no;
+    if (!mergedMap.has(key)) {
+      mergedMap.set(key, b);
+    }
+  });
 
   const allMerged = Array.from(mergedMap.values());
   if (typeof window !== 'undefined') {
@@ -319,12 +386,10 @@ export async function updateBookingStatus(id: string, status: Booking['status'],
     }
   }
 
-  // 2. Update Supabase DB if connected
+  // 2. Update Supabase DB if connected (only valid columns)
   if (supabase) {
     try {
-      const updateData: Partial<Booking> = { status };
-      if (paymentStatus) updateData.payment_status = paymentStatus;
-      await supabase.from('bookings').update(updateData).or(`id.eq.${id},reference_no.eq.${id}`);
+      await supabase.from('bookings').update({ status }).or(`id.eq.${id},reference_no.eq.${id}`);
     } catch (err) {
       console.warn('Supabase update status error:', err);
     }
