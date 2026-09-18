@@ -49,33 +49,79 @@ function markCourtAsDeletedLocally(id: string) {
   }
 }
 
+// Helper for tracking custom created courts locally so newly added courts never vanish
+function getCustomCreatedCourts(): Court[] {
+  if (typeof window !== 'undefined') {
+    try {
+      const local = localStorage.getItem('balamban_custom_created_courts');
+      if (local) return JSON.parse(local);
+    } catch (e) {
+      console.error(e);
+    }
+  }
+  return [];
+}
+
+function saveCustomCreatedCourt(court: Court) {
+  if (typeof window !== 'undefined') {
+    try {
+      const existing = getCustomCreatedCourts();
+      const updated = [...existing.filter(c => c.id !== court.id), court];
+      localStorage.setItem('balamban_custom_created_courts', JSON.stringify(updated));
+    } catch (e) {
+      console.error(e);
+    }
+  }
+}
+
+function removeCustomCreatedCourt(id: string) {
+  if (typeof window !== 'undefined') {
+    try {
+      const existing = getCustomCreatedCourts();
+      const filtered = existing.filter(c => c.id !== id);
+      localStorage.setItem('balamban_custom_created_courts', JSON.stringify(filtered));
+    } catch (e) {
+      console.error(e);
+    }
+  }
+}
+
 // Helper functions that query Supabase OR fallback smoothly to localStorage
 export async function getCourts(): Promise<Court[]> {
   const deletedIds = getDeletedCourtIds();
+  const customCourts = getCustomCreatedCourts();
+
+  let baseCourts: Court[] = INITIAL_COURTS;
 
   if (supabase) {
     try {
       const { data, error } = await supabase.from('courts').select('*').order('created_at', { ascending: true });
       if (!error && data) {
-        const validCourts = (data as Court[]).filter(c => !deletedIds.includes(c.id));
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('balamban_pickleball_courts', JSON.stringify(validCourts));
-        }
-        return validCourts;
+        baseCourts = data as Court[];
       }
     } catch (err) {
       console.warn('Supabase fetch courts error, using local fallback:', err);
     }
-  }
-
-  if (typeof window !== 'undefined') {
+  } else if (typeof window !== 'undefined') {
     const local = localStorage.getItem('balamban_pickleball_courts');
     if (local !== null) {
-      const parsed: Court[] = JSON.parse(local);
-      return parsed.filter(c => !deletedIds.includes(c.id));
+      baseCourts = JSON.parse(local);
     }
   }
-  return INITIAL_COURTS.filter(c => !deletedIds.includes(c.id));
+
+  // Merge baseCourts with customCourts so created courts always show up
+  const mergedMap = new Map<string, Court>();
+  baseCourts.forEach(c => mergedMap.set(c.id, c));
+  customCourts.forEach(c => mergedMap.set(c.id, c));
+
+  const allMerged = Array.from(mergedMap.values());
+  const validCourts = allMerged.filter(c => !deletedIds.includes(c.id));
+
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('balamban_pickleball_courts', JSON.stringify(validCourts));
+  }
+
+  return validCourts;
 }
 
 export async function createCourt(newCourtData: Omit<Court, 'id'>): Promise<Court> {
@@ -85,32 +131,34 @@ export async function createCourt(newCourtData: Omit<Court, 'id'>): Promise<Cour
     id: generatedId
   };
 
+  // 1. Save locally first so newly created court NEVER disappears
+  saveCustomCreatedCourt(court);
+
+  // 2. Try inserting into Supabase
   if (supabase) {
     try {
-      const { data, error } = await supabase.from('courts').insert([court]).select().single();
-      if (!error && data) {
-        if (typeof window !== 'undefined') {
-          const existing = await getCourts();
-          const updated = [...existing.filter(c => c.id !== data.id), data];
-          localStorage.setItem('balamban_pickleball_courts', JSON.stringify(updated));
-        }
-        return data as Court;
+      const { error } = await supabase.from('courts').insert([court]).select().single();
+      if (error) {
+        console.warn('Supabase insert court warning (court saved locally):', error);
       }
     } catch (err) {
       console.warn('Supabase insert court error:', err);
     }
   }
 
-  if (typeof window !== 'undefined') {
-    const existing = await getCourts();
-    const updated = [...existing, court];
-    localStorage.setItem('balamban_pickleball_courts', JSON.stringify(updated));
-  }
   return court;
 }
 
 export async function updateCourtDetails(id: string, updates: Partial<Court>): Promise<boolean> {
   let success = false;
+
+  if (typeof window !== 'undefined') {
+    const custom = getCustomCreatedCourts();
+    const target = custom.find(c => c.id === id);
+    if (target) {
+      saveCustomCreatedCourt({ ...target, ...updates });
+    }
+  }
 
   if (supabase) {
     try {
@@ -131,8 +179,9 @@ export async function updateCourtDetails(id: string, updates: Partial<Court>): P
 }
 
 export async function deleteCourt(id: string): Promise<boolean> {
-  // 1. Mark ID as deleted locally so it NEVER reappears on page refresh or re-login
+  // 1. Mark ID as deleted locally & remove from custom created list so it NEVER reappears
   markCourtAsDeletedLocally(id);
+  removeCustomCreatedCourt(id);
 
   // 2. Perform deletion in Supabase DB if connected
   if (supabase) {
