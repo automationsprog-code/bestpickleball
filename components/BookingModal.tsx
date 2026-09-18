@@ -60,12 +60,22 @@ export default function BookingModal({ court, onClose, onBookingSuccess }: Booki
         const bookings = await getBookingsForDate(selectedDate);
         const slotsForThisCourt = bookings
           .filter(b => b.court_id === court?.id || (b.court_name && court?.name && b.court_name === court?.name))
-          .map(b => b.start_time);
+          .flatMap(b => {
+            const list: string[] = [];
+            if (b.start_time) {
+              list.push(b.start_time);
+              list.push(b.start_time.substring(0, 5));
+            }
+            if (b.time_slot_label) {
+              list.push(b.time_slot_label);
+            }
+            return list;
+          });
         setBookedSlots(slotsForThisCourt);
         
         // Auto-select first available slot if taken
-        if (slotsForThisCourt.includes(selectedSlot.startTime)) {
-          const firstAvail = availableSlots.find(s => !slotsForThisCourt.includes(s.startTime));
+        if (slotsForThisCourt.includes(selectedSlot.startTime) || slotsForThisCourt.includes(selectedSlot.label)) {
+          const firstAvail = availableSlots.find(s => !slotsForThisCourt.includes(s.startTime) && !slotsForThisCourt.includes(s.label));
           if (firstAvail) setSelectedSlot(firstAvail);
         }
       } catch (err) {
@@ -287,7 +297,7 @@ export default function BookingModal({ court, onClose, onBookingSuccess }: Booki
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {availableSlots.map((slot) => {
-                  const isBooked = bookedSlots.includes(slot.startTime);
+                  const isBooked = bookedSlots.includes(slot.startTime) || bookedSlots.includes(`${slot.startTime}:00`) || bookedSlots.includes(slot.label);
                   const isSelected = selectedSlot.startTime === slot.startTime;
 
                   return (

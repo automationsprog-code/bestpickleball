@@ -1,8 +1,10 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Court } from '@/lib/types';
 import { CheckCircle, Calendar } from 'lucide-react';
+
+const DEFAULT_COURT_IMAGE = 'https://images.unsplash.com/photo-1599586120429-48281b6f0eca?auto=format&fit=crop&w=1200&q=80';
 
 interface CourtCardProps {
   court: Court;
@@ -10,17 +12,30 @@ interface CourtCardProps {
 }
 
 export default function CourtCard({ court, onBookCourt }: CourtCardProps) {
+  const [imgSrc, setImgSrc] = useState<string>(DEFAULT_COURT_IMAGE);
+
+  useEffect(() => {
+    const raw = court.image_url;
+    if (raw && typeof raw === 'string' && raw.trim().length > 10) {
+      setImgSrc(raw.trim());
+    } else {
+      setImgSrc(DEFAULT_COURT_IMAGE);
+    }
+  }, [court.image_url]);
+
   return (
     <div className="bg-white rounded-3xl border border-slate-200 hover:border-lime-500 transition-all duration-300 overflow-hidden flex flex-col group shadow-md hover:shadow-xl">
       
       {/* Court Image Banner */}
       <div className="relative h-48 sm:h-56 w-full bg-slate-100 overflow-hidden">
         <img
-          src={court.image_url || 'https://images.unsplash.com/photo-1599586120429-48281b6f0eca?auto=format&fit=crop&w=1200&q=80'}
+          src={imgSrc}
           alt={court.name}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-          onError={(e) => {
-            (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1599586120429-48281b6f0eca?auto=format&fit=crop&w=1200&q=80';
+          onError={() => {
+            if (imgSrc !== DEFAULT_COURT_IMAGE) {
+              setImgSrc(DEFAULT_COURT_IMAGE);
+            }
           }}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950/60 via-transparent to-black/20"></div>
