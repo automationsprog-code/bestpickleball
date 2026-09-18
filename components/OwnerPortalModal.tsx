@@ -919,26 +919,9 @@ export default function OwnerPortalModal({ onClose, onCourtsUpdated }: OwnerPort
                       
                       <label className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-white hover:bg-blue-100 border border-blue-300 text-xs font-bold text-blue-900 cursor-pointer transition shadow-xs">
                         <Upload className="w-4 h-4 text-blue-600" />
-                        <span>Select GCash QR Image File...</span>
+                        <span>Upload GCash QR Image...</span>
                         <input type="file" accept="image/*" onChange={handleGCashQRUpload} className="hidden" />
                       </label>
-
-                      <div className="grid grid-cols-2 gap-2 text-xs">
-                        <input
-                          type="text"
-                          value={settings.gcash_number || ''}
-                          onChange={(e) => setSettings({ ...settings, gcash_number: e.target.value })}
-                          placeholder="GCash No."
-                          className="bg-white border border-slate-300 rounded-xl px-2.5 py-1.5 text-xs text-slate-900"
-                        />
-                        <input
-                          type="text"
-                          value={settings.gcash_name || ''}
-                          onChange={(e) => setSettings({ ...settings, gcash_name: e.target.value })}
-                          placeholder="Account Name"
-                          className="bg-white border border-slate-300 rounded-xl px-2.5 py-1.5 text-xs text-slate-900"
-                        />
-                      </div>
                     </div>
 
                     {/* Maya Settings */}
@@ -955,26 +938,9 @@ export default function OwnerPortalModal({ onClose, onCourtsUpdated }: OwnerPort
 
                       <label className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-white hover:bg-emerald-100 border border-emerald-300 text-xs font-bold text-emerald-900 cursor-pointer transition shadow-xs">
                         <Upload className="w-4 h-4 text-emerald-600" />
-                        <span>Select Maya QR Image File...</span>
+                        <span>Upload Maya QR Image...</span>
                         <input type="file" accept="image/*" onChange={handleMayaQRUpload} className="hidden" />
                       </label>
-
-                      <div className="grid grid-cols-2 gap-2 text-xs">
-                        <input
-                          type="text"
-                          value={settings.maya_number || ''}
-                          onChange={(e) => setSettings({ ...settings, maya_number: e.target.value })}
-                          placeholder="Maya No."
-                          className="bg-white border border-slate-300 rounded-xl px-2.5 py-1.5 text-xs text-slate-900"
-                        />
-                        <input
-                          type="text"
-                          value={settings.maya_name || ''}
-                          onChange={(e) => setSettings({ ...settings, maya_name: e.target.value })}
-                          placeholder="Account Name"
-                          className="bg-white border border-slate-300 rounded-xl px-2.5 py-1.5 text-xs text-slate-900"
-                        />
-                      </div>
                     </div>
 
                     {/* Landbank Settings */}
@@ -991,26 +957,9 @@ export default function OwnerPortalModal({ onClose, onCourtsUpdated }: OwnerPort
 
                       <label className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-white hover:bg-teal-100 border border-teal-300 text-xs font-bold text-teal-900 cursor-pointer transition shadow-xs">
                         <Upload className="w-4 h-4 text-teal-600" />
-                        <span>Select Landbank QR Image File...</span>
+                        <span>Upload Landbank QR Image...</span>
                         <input type="file" accept="image/*" onChange={handleLandbankQRUpload} className="hidden" />
                       </label>
-
-                      <div className="grid grid-cols-2 gap-2 text-xs">
-                        <input
-                          type="text"
-                          value={settings.landbank_number || ''}
-                          onChange={(e) => setSettings({ ...settings, landbank_number: e.target.value })}
-                          placeholder="Landbank Acct No."
-                          className="bg-white border border-slate-300 rounded-xl px-2.5 py-1.5 text-xs text-slate-900"
-                        />
-                        <input
-                          type="text"
-                          value={settings.landbank_name || ''}
-                          onChange={(e) => setSettings({ ...settings, landbank_name: e.target.value })}
-                          placeholder="Account Name"
-                          className="bg-white border border-slate-300 rounded-xl px-2.5 py-1.5 text-xs text-slate-900"
-                        />
-                      </div>
                     </div>
 
                     <div className="pt-2">
@@ -1026,27 +975,58 @@ export default function OwnerPortalModal({ onClose, onCourtsUpdated }: OwnerPort
 
                   </div>
 
-                  {/* QR Code Live Preview */}
-                  <div className="bg-slate-50 p-6 rounded-3xl border border-slate-200 flex flex-col items-center justify-center space-y-4 text-center">
-                    <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-bold border border-blue-300">
-                      <QrCode className="w-3.5 h-3.5 text-blue-700" />
-                      <span>Customer Scan-to-Pay Preview</span>
+                  {/* QR Code Live Preview Side Panel */}
+                  <div className="bg-slate-50 p-5 rounded-3xl border border-slate-200 space-y-4 text-center">
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-lime-100 text-lime-800 rounded-full text-xs font-bold border border-lime-300">
+                      <QrCode className="w-3.5 h-3.5 text-lime-700" />
+                      <span>Customer Payment QR Previews</span>
                     </div>
 
-                    <div className="w-48 h-48 bg-white p-3 rounded-2xl shadow-md border-4 border-lime-500 flex items-center justify-center overflow-hidden">
-                      <img
-                        src={settings.qr_code_url}
-                        alt="Payment QR Code Preview"
-                        className="w-full h-full object-contain"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=GCASH_BALAMBAN';
-                        }}
-                      />
-                    </div>
+                    <div className="space-y-4">
+                      {/* GCash Preview */}
+                      <div className="bg-white p-3 rounded-2xl border border-blue-200 shadow-xs flex flex-col items-center">
+                        <span className="text-[11px] font-black text-blue-900 mb-2">GCash QR Code</span>
+                        <div className="w-36 h-36 bg-slate-50 p-2 rounded-xl border border-slate-200 flex items-center justify-center overflow-hidden">
+                          <img
+                            src={settings.qr_code_url}
+                            alt="GCash QR Code Preview"
+                            className="w-full h-full object-contain"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=GCASH_BALAMBAN';
+                            }}
+                          />
+                        </div>
+                      </div>
 
-                    <div>
-                      <p className="text-xs font-mono font-bold text-lime-800">{settings.gcash_number}</p>
-                      <p className="text-xs font-bold text-slate-900">{settings.gcash_name}</p>
+                      {/* Maya Preview */}
+                      <div className="bg-white p-3 rounded-2xl border border-emerald-200 shadow-xs flex flex-col items-center">
+                        <span className="text-[11px] font-black text-emerald-900 mb-2">Maya QR Code</span>
+                        <div className="w-36 h-36 bg-slate-50 p-2 rounded-xl border border-slate-200 flex items-center justify-center overflow-hidden">
+                          <img
+                            src={settings.maya_qr_url}
+                            alt="Maya QR Code Preview"
+                            className="w-full h-full object-contain"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=MAYA_BALAMBAN';
+                            }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Landbank Preview */}
+                      <div className="bg-white p-3 rounded-2xl border border-teal-200 shadow-xs flex flex-col items-center">
+                        <span className="text-[11px] font-black text-teal-900 mb-2">Landbank QR Code</span>
+                        <div className="w-36 h-36 bg-slate-50 p-2 rounded-xl border border-slate-200 flex items-center justify-center overflow-hidden">
+                          <img
+                            src={settings.landbank_qr_url}
+                            alt="Landbank QR Code Preview"
+                            className="w-full h-full object-contain"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=LANDBANK_BALAMBAN';
+                            }}
+                          />
+                        </div>
+                      </div>
                     </div>
                   </div>
 
