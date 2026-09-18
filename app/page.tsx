@@ -11,7 +11,7 @@ import MyBookings from '@/components/MyBookings';
 import ChatSupport from '@/components/ChatSupport';
 import Footer from '@/components/Footer';
 import { Court, Booking, AdminSettings } from '@/lib/types';
-import { getCourts, getAllUserBookings, getAdminSettings } from '@/lib/supabase';
+import { getCourts, getAllUserBookings, getAdminSettings, supabase } from '@/lib/supabase';
 import { Trophy, Zap, Sparkles, ShieldCheck, AlertCircle } from 'lucide-react';
 
 import { INITIAL_COURTS } from '@/lib/data';
@@ -38,6 +38,26 @@ export default function Home() {
 
   useEffect(() => {
     loadInitialData();
+
+    const client = supabase;
+    if (client) {
+      const channel = client
+        .channel('realtime-db-changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings' }, () => {
+          loadInitialData();
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'courts' }, () => {
+          loadInitialData();
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'settings' }, () => {
+          loadInitialData();
+        })
+        .subscribe();
+
+      return () => {
+        client.removeChannel(channel);
+      };
+    }
   }, []);
 
   const handleBookingSuccess = (newBooking: Booking) => {
