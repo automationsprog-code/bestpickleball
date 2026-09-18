@@ -155,14 +155,42 @@ export default function OwnerPortalModal({ onClose, onCourtsUpdated }: OwnerPort
     }
   };
 
-  // Handle Uploading QR Code Image File
-  const handleQRImageFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle Uploading GCash QR Image File
+  const handleGCashQRUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
         if (typeof reader.result === 'string') {
-          setSettings({ ...settings, qr_code_url: reader.result });
+          setSettings(prev => ({ ...prev, qr_code_url: reader.result as string }));
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Handle Uploading Maya QR Image File
+  const handleMayaQRUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (typeof reader.result === 'string') {
+          setSettings(prev => ({ ...prev, maya_qr_url: reader.result as string }));
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Handle Uploading Landbank QR Image File
+  const handleLandbankQRUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (typeof reader.result === 'string') {
+          setSettings(prev => ({ ...prev, landbank_qr_url: reader.result as string }));
         }
       };
       reader.readAsDataURL(file);
@@ -875,81 +903,111 @@ export default function OwnerPortalModal({ onClose, onCourtsUpdated }: OwnerPort
                     </div>
 
                     {/* GCash Settings */}
-                    <div className="p-3 bg-blue-50/60 rounded-2xl border border-blue-200 space-y-2">
-                      <p className="text-xs font-black text-blue-900">GCash Details:</p>
-                      <input
-                        type="text"
-                        value={settings.gcash_number}
-                        onChange={(e) => setSettings({ ...settings, gcash_number: e.target.value })}
-                        placeholder="GCash Number (e.g. 0917-888-9900)"
-                        className="w-full bg-white border border-slate-300 rounded-xl px-3 py-1.5 text-xs text-slate-900 font-medium"
-                      />
-                      <input
-                        type="text"
-                        value={settings.gcash_name}
-                        onChange={(e) => setSettings({ ...settings, gcash_name: e.target.value })}
-                        placeholder="GCash Account Name"
-                        className="w-full bg-white border border-slate-300 rounded-xl px-3 py-1.5 text-xs text-slate-900 font-medium"
-                      />
-                      <input
-                        type="text"
-                        value={settings.qr_code_url}
-                        onChange={(e) => setSettings({ ...settings, qr_code_url: e.target.value })}
-                        placeholder="GCash QR Code Image URL"
-                        className="w-full bg-white border border-slate-300 rounded-xl px-3 py-1.5 text-xs text-slate-900 font-medium"
-                      />
+                    <div className="p-4 bg-blue-50/70 rounded-2xl border border-blue-200 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs font-black text-blue-900 flex items-center gap-1.5">
+                          <QrCode className="w-4 h-4 text-blue-600" />
+                          <span>GCash Scan-to-Pay QR Code</span>
+                        </p>
+                        {settings.qr_code_url && (
+                          <img src={settings.qr_code_url} alt="GCash QR" className="w-10 h-10 object-contain border border-blue-300 bg-white rounded-lg p-0.5" />
+                        )}
+                      </div>
+                      
+                      <label className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-white hover:bg-blue-100 border border-blue-300 text-xs font-bold text-blue-900 cursor-pointer transition shadow-xs">
+                        <Upload className="w-4 h-4 text-blue-600" />
+                        <span>Select GCash QR Image File...</span>
+                        <input type="file" accept="image/*" onChange={handleGCashQRUpload} className="hidden" />
+                      </label>
+
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <input
+                          type="text"
+                          value={settings.gcash_number || ''}
+                          onChange={(e) => setSettings({ ...settings, gcash_number: e.target.value })}
+                          placeholder="GCash No."
+                          className="bg-white border border-slate-300 rounded-xl px-2.5 py-1.5 text-xs text-slate-900"
+                        />
+                        <input
+                          type="text"
+                          value={settings.gcash_name || ''}
+                          onChange={(e) => setSettings({ ...settings, gcash_name: e.target.value })}
+                          placeholder="Account Name"
+                          className="bg-white border border-slate-300 rounded-xl px-2.5 py-1.5 text-xs text-slate-900"
+                        />
+                      </div>
                     </div>
 
                     {/* Maya Settings */}
-                    <div className="p-3 bg-emerald-50/60 rounded-2xl border border-emerald-200 space-y-2">
-                      <p className="text-xs font-black text-emerald-900">Maya Details:</p>
-                      <input
-                        type="text"
-                        value={settings.maya_number || ''}
-                        onChange={(e) => setSettings({ ...settings, maya_number: e.target.value })}
-                        placeholder="Maya Number"
-                        className="w-full bg-white border border-slate-300 rounded-xl px-3 py-1.5 text-xs text-slate-900 font-medium"
-                      />
-                      <input
-                        type="text"
-                        value={settings.maya_name || ''}
-                        onChange={(e) => setSettings({ ...settings, maya_name: e.target.value })}
-                        placeholder="Maya Account Name"
-                        className="w-full bg-white border border-slate-300 rounded-xl px-3 py-1.5 text-xs text-slate-900 font-medium"
-                      />
-                      <input
-                        type="text"
-                        value={settings.maya_qr_url || ''}
-                        onChange={(e) => setSettings({ ...settings, maya_qr_url: e.target.value })}
-                        placeholder="Maya QR Code Image URL"
-                        className="w-full bg-white border border-slate-300 rounded-xl px-3 py-1.5 text-xs text-slate-900 font-medium"
-                      />
+                    <div className="p-4 bg-emerald-50/70 rounded-2xl border border-emerald-200 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs font-black text-emerald-900 flex items-center gap-1.5">
+                          <QrCode className="w-4 h-4 text-emerald-600" />
+                          <span>Maya Scan-to-Pay QR Code</span>
+                        </p>
+                        {settings.maya_qr_url && (
+                          <img src={settings.maya_qr_url} alt="Maya QR" className="w-10 h-10 object-contain border border-emerald-300 bg-white rounded-lg p-0.5" />
+                        )}
+                      </div>
+
+                      <label className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-white hover:bg-emerald-100 border border-emerald-300 text-xs font-bold text-emerald-900 cursor-pointer transition shadow-xs">
+                        <Upload className="w-4 h-4 text-emerald-600" />
+                        <span>Select Maya QR Image File...</span>
+                        <input type="file" accept="image/*" onChange={handleMayaQRUpload} className="hidden" />
+                      </label>
+
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <input
+                          type="text"
+                          value={settings.maya_number || ''}
+                          onChange={(e) => setSettings({ ...settings, maya_number: e.target.value })}
+                          placeholder="Maya No."
+                          className="bg-white border border-slate-300 rounded-xl px-2.5 py-1.5 text-xs text-slate-900"
+                        />
+                        <input
+                          type="text"
+                          value={settings.maya_name || ''}
+                          onChange={(e) => setSettings({ ...settings, maya_name: e.target.value })}
+                          placeholder="Account Name"
+                          className="bg-white border border-slate-300 rounded-xl px-2.5 py-1.5 text-xs text-slate-900"
+                        />
+                      </div>
                     </div>
 
                     {/* Landbank Settings */}
-                    <div className="p-3 bg-teal-50/60 rounded-2xl border border-teal-200 space-y-2">
-                      <p className="text-xs font-black text-teal-900">Landbank Details:</p>
-                      <input
-                        type="text"
-                        value={settings.landbank_number || ''}
-                        onChange={(e) => setSettings({ ...settings, landbank_number: e.target.value })}
-                        placeholder="Landbank Account Number (e.g. 1234-5678-9012)"
-                        className="w-full bg-white border border-slate-300 rounded-xl px-3 py-1.5 text-xs text-slate-900 font-medium"
-                      />
-                      <input
-                        type="text"
-                        value={settings.landbank_name || ''}
-                        onChange={(e) => setSettings({ ...settings, landbank_name: e.target.value })}
-                        placeholder="Landbank Account Name"
-                        className="w-full bg-white border border-slate-300 rounded-xl px-3 py-1.5 text-xs text-slate-900 font-medium"
-                      />
-                      <input
-                        type="text"
-                        value={settings.landbank_qr_url || ''}
-                        onChange={(e) => setSettings({ ...settings, landbank_qr_url: e.target.value })}
-                        placeholder="Landbank QR Code Image URL"
-                        className="w-full bg-white border border-slate-300 rounded-xl px-3 py-1.5 text-xs text-slate-900 font-medium"
-                      />
+                    <div className="p-4 bg-teal-50/70 rounded-2xl border border-teal-200 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs font-black text-teal-900 flex items-center gap-1.5">
+                          <QrCode className="w-4 h-4 text-teal-600" />
+                          <span>Landbank Scan-to-Pay QR Code</span>
+                        </p>
+                        {settings.landbank_qr_url && (
+                          <img src={settings.landbank_qr_url} alt="Landbank QR" className="w-10 h-10 object-contain border border-teal-300 bg-white rounded-lg p-0.5" />
+                        )}
+                      </div>
+
+                      <label className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-white hover:bg-teal-100 border border-teal-300 text-xs font-bold text-teal-900 cursor-pointer transition shadow-xs">
+                        <Upload className="w-4 h-4 text-teal-600" />
+                        <span>Select Landbank QR Image File...</span>
+                        <input type="file" accept="image/*" onChange={handleLandbankQRUpload} className="hidden" />
+                      </label>
+
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <input
+                          type="text"
+                          value={settings.landbank_number || ''}
+                          onChange={(e) => setSettings({ ...settings, landbank_number: e.target.value })}
+                          placeholder="Landbank Acct No."
+                          className="bg-white border border-slate-300 rounded-xl px-2.5 py-1.5 text-xs text-slate-900"
+                        />
+                        <input
+                          type="text"
+                          value={settings.landbank_name || ''}
+                          onChange={(e) => setSettings({ ...settings, landbank_name: e.target.value })}
+                          placeholder="Account Name"
+                          className="bg-white border border-slate-300 rounded-xl px-2.5 py-1.5 text-xs text-slate-900"
+                        />
+                      </div>
                     </div>
 
                     <div className="pt-2">
