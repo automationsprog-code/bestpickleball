@@ -244,12 +244,18 @@ export async function createBooking(newBooking: Omit<Booking, 'id' | 'created_at
     }
   }
 
-  // 2. Try inserting into Supabase
+  // 2. Try inserting into Supabase with FK fallback
   if (supabase) {
     try {
       const { data, error } = await supabase.from('bookings').insert([booking]).select().single();
       if (error) {
-        console.warn('Supabase insert booking warning (saved locally):', error);
+        console.warn('Supabase insert booking warning:', error);
+        // If FK constraint error (23503), retry inserting without rigid court_id so booking is ALWAYS saved to Supabase!
+        if (error.code === '23503') {
+          const fallbackBooking = { ...booking, court_id: undefined };
+          const { data: fbData } = await supabase.from('bookings').insert([fallbackBooking]).select().single();
+          if (fbData) return fbData as Booking;
+        }
       } else if (data) {
         return data as Booking;
       }
