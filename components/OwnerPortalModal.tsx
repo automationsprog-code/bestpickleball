@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Booking, AdminSettings, Court } from '@/lib/types';
-import { getAllUserBookings, updateBookingStatus, getAdminSettings, updateAdminSettings, getCourts, createCourt, updateCourtDetails, updateCourtStatus, deleteCourt } from '@/lib/supabase';
+import { getAllUserBookings, updateBookingStatus, deleteBooking, getAdminSettings, updateAdminSettings, getCourts, createCourt, updateCourtDetails, updateCourtStatus, deleteCourt } from '@/lib/supabase';
 import { DEFAULT_ADMIN_SETTINGS } from '@/lib/data';
 import { X, ShieldCheck, QrCode, Search, User, CheckCircle2, Save, RefreshCw, AlertCircle, Lock, KeyRound, LogOut, Plus, Trophy, ToggleLeft, ToggleRight, Edit3, DollarSign, Image as ImageIcon, Upload, Trash2, Clock, Globe, Sparkles, Phone, Zap } from 'lucide-react';
 
@@ -86,6 +86,14 @@ export default function OwnerPortalModal({ onClose, onCourtsUpdated }: OwnerPort
   const handleStatusChange = async (id: string, newStatus: Booking['status'], payStatus?: Booking['payment_status']) => {
     await updateBookingStatus(id, newStatus, payStatus);
     loadData();
+  };
+
+  const handleDeleteBooking = async (idOrRef: string) => {
+    if (confirm('Sigurado ka nga gusto nimo i-DELETE kini nga booking record?')) {
+      setBookings(prev => prev.filter(b => b.id !== idOrRef && b.reference_no !== idOrRef));
+      await deleteBooking(idOrRef);
+      loadData();
+    }
   };
 
   // Immediate Optimistic Delete Court Handler
@@ -532,11 +540,18 @@ export default function OwnerPortalModal({ onClose, onCourtsUpdated }: OwnerPort
                               {b.status !== 'Cancelled' && (
                                 <button
                                   onClick={() => handleStatusChange(b.id, 'Cancelled')}
-                                  className="px-2 py-1 rounded-lg bg-rose-100 text-rose-800 hover:bg-rose-500 hover:text-white font-bold text-[10px] transition border border-rose-300"
+                                  className="px-2 py-1 rounded-lg bg-amber-100 text-amber-800 hover:bg-amber-500 hover:text-white font-bold text-[10px] transition border border-amber-300"
                                 >
                                   Cancel
                                 </button>
                               )}
+                              <button
+                                onClick={() => handleDeleteBooking(b.id || b.reference_no)}
+                                className="px-2 py-1 rounded-lg bg-rose-600 text-white hover:bg-rose-700 font-bold text-[10px] transition border border-rose-700 shadow-xs"
+                                title="Delete this booking record permanently"
+                              >
+                                Delete
+                              </button>
                             </td>
                           </tr>
                         ))}

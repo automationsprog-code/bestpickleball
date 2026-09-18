@@ -304,25 +304,57 @@ export async function getBookingsForDate(date: string): Promise<Booking[]> {
 }
 
 export async function updateBookingStatus(id: string, status: Booking['status'], paymentStatus?: Booking['payment_status']): Promise<boolean> {
+  // 1. ALWAYS update local storage first so UI updates immediately & permanently
+  if (typeof window !== 'undefined') {
+    try {
+      const local = localStorage.getItem('balamban_pickleball_bookings');
+      const existing: Booking[] = local ? JSON.parse(local) : INITIAL_BOOKINGS;
+      const updated = existing.map(b => (b.id === id || b.reference_no === id) ? { ...b, status, ...(paymentStatus ? { payment_status: paymentStatus } : {}) } : b);
+      localStorage.setItem('balamban_pickleball_bookings', JSON.stringify(updated));
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  // 2. Update Supabase DB if connected
   if (supabase) {
     try {
       const updateData: Partial<Booking> = { status };
       if (paymentStatus) updateData.payment_status = paymentStatus;
-      const { error } = await supabase.from('bookings').update(updateData).eq('id', id);
-      if (!error) return true;
+      await supabase.from('bookings').update(updateData).or(`id.eq.${id},reference_no.eq.${id}`);
     } catch (err) {
       console.warn('Supabase update status error:', err);
     }
   }
 
+  return true;
+}
+
+export async function deleteBooking(idOrRef: string): Promise<boolean> {
+  // 1. ALWAYS remove from local storage
   if (typeof window !== 'undefined') {
-    const local = localStorage.getItem('balamban_pickleball_bookings');
-    const existing: Booking[] = local ? JSON.parse(local) : INITIAL_BOOKINGS;
-    const updated = existing.map(b => b.id === id ? { ...b, status, ...(paymentStatus ? { payment_status: paymentStatus } : {}) } : b);
-    localStorage.setItem('balamban_pickleball_bookings', JSON.stringify(updated));
-    return true;
+    try {
+      const local = localStorage.getItem('balamban_pickleball_bookings');
+      if (local) {
+        const existing: Booking[] = JSON.parse(local);
+        const filtered = existing.filter(b => b.id !== idOrRef && b.reference_no !== idOrRef);
+        localStorage.setItem('balamban_pickleball_bookings', JSON.stringify(filtered));
+      }
+    } catch (e) {
+      console.error(e);
+    }
   }
-  return false;
+
+  // 2. Delete from Supabase DB
+  if (supabase) {
+    try {
+      await supabase.from('bookings').delete().or(`id.eq.${idOrRef},reference_no.eq.${idOrRef}`);
+    } catch (err) {
+      console.warn('Supabase delete booking error:', err);
+    }
+  }
+
+  return true;
 }
 
 export async function getAdminSettings(): Promise<AdminSettings> {
