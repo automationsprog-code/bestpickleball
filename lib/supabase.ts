@@ -107,69 +107,40 @@ function generateValidUUID(): string {
 // Helper functions that query Supabase OR fallback smoothly to localStorage
 export async function getCourts(): Promise<Court[]> {
   const deletedIds = getDeletedCourtIds();
-  const customCourts = getCustomCreatedCourts();
 
   let remoteCourts: Court[] = [];
+  let isRemoteConnected = false;
 
   if (supabase) {
     try {
       const { data, error } = await supabase.from('courts').select('*').order('created_at', { ascending: true });
       if (!error && data && data.length > 0) {
         remoteCourts = data as Court[];
-
-        // Auto-sync any custom courts created locally that are missing in Supabase
-        const remoteIds = new Set(remoteCourts.map(r => r.id));
-        const unsynced = customCourts.filter(c => !remoteIds.has(c.id));
-        if (unsynced.length > 0) {
-          await supabase.from('courts').insert(unsynced);
-          const { data: refreshed } = await supabase.from('courts').select('*').order('created_at', { ascending: true });
-          if (refreshed) remoteCourts = refreshed as Court[];
-        }
+        isRemoteConnected = true;
       }
     } catch (err) {
       console.warn('Supabase fetch courts error, using local fallback:', err);
     }
   }
 
+  // When Supabase Cloud DB is connected, it is 100% the SINGLE SOURCE OF TRUTH across all devices!
+  if (isRemoteConnected) {
+    const validRemote = remoteCourts.filter(c => !deletedIds.includes(c.id));
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('balamban_pickleball_courts', JSON.stringify(validRemote));
+      localStorage.removeItem('balamban_custom_created_courts'); // Clear stale legacy courts
+    }
+    return validRemote;
+  }
+
+  // Fallback ONLY when Supabase is completely unconfigured/offline
+  const customCourts = getCustomCreatedCourts();
   const mergedMap = new Map<string, Court>();
-
-  // 1. Add INITIAL_COURTS first
   INITIAL_COURTS.forEach(c => mergedMap.set(c.id, c));
-
-  // 2. Add local customCreatedCourts next
   customCourts.forEach(c => mergedMap.set(c.id, c));
 
-  // 3. Add remoteCourts LAST so Supabase Cloud DB is the ultimate single source of truth across ALL devices!
-  remoteCourts.forEach(c => mergedMap.set(c.id, c));
-
-  const allMerged = Array.from(mergedMap.values());
-  let validCourts = allMerged.filter(c => !deletedIds.includes(c.id));
-
-  // Deduplicate courts by name so duplicate cards never appear on the home page
-  const nameMap = new Map<string, Court>();
-  validCourts.forEach(c => {
-    const key = c.name.trim().toLowerCase();
-    if (!nameMap.has(key)) {
-      nameMap.set(key, c);
-    } else {
-      const existing = nameMap.get(key)!;
-      if ((!existing.image_url || existing.image_url.length < 20) && c.image_url && c.image_url.length >= 20) {
-        nameMap.set(key, c);
-      }
-    }
-  });
-
-  const finalDeduplicatedCourts = Array.from(nameMap.values());
-
-  if (finalDeduplicatedCourts.length === 0) {
-    return INITIAL_COURTS;
-  }
-
-  if (typeof window !== 'undefined') {
-    localStorage.setItem('balamban_pickleball_courts', JSON.stringify(finalDeduplicatedCourts));
-  }
-
-  return finalDeduplicatedCourts;
+  const allMerged = Array.from(mergedMap.values()).filter(c => !deletedIds.includes(c.id));
+  return allMerged.length > 0 ? allMerged : INITIAL_COURTS;
 }
 
 export async function createCourt(newCourtData: Omit<Court, 'id'>): Promise<Court> {
