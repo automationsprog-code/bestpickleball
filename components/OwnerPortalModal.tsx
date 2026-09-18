@@ -840,8 +840,8 @@ export default function OwnerPortalModal({ onClose, onCourtsUpdated }: OwnerPort
                   {/* Form Inputs */}
                   <div className="space-y-4">
                     <div>
-                      <h3 className="text-sm font-bold text-slate-900 mb-1">GCash Details & Operating Hours:</h3>
-                      <p className="text-xs text-slate-500 mb-3 font-medium">Configure GCash QR payment code and time slot booking schedule range.</p>
+                      <h3 className="text-sm font-bold text-slate-900 mb-1">GCash, Maya & Landbank QR Details:</h3>
+                      <p className="text-xs text-slate-500 mb-3 font-medium">Configure GCash, Maya, and Landbank QR codes and operating hours schedule.</p>
                     </div>
 
                     <div className="grid grid-cols-2 gap-3 p-3 bg-slate-50 rounded-2xl border border-slate-200">
@@ -874,48 +874,82 @@ export default function OwnerPortalModal({ onClose, onCourtsUpdated }: OwnerPort
                       </div>
                     </div>
 
-                    <div>
-                      <label className="text-xs font-bold text-slate-800 block mb-1">GCash Account Number *</label>
+                    {/* GCash Settings */}
+                    <div className="p-3 bg-blue-50/60 rounded-2xl border border-blue-200 space-y-2">
+                      <p className="text-xs font-black text-blue-900">GCash Details:</p>
                       <input
                         type="text"
-                        required
                         value={settings.gcash_number}
                         onChange={(e) => setSettings({ ...settings, gcash_number: e.target.value })}
-                        placeholder="e.g. 0917-888-9900"
-                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-lime-600 font-medium"
+                        placeholder="GCash Number (e.g. 0917-888-9900)"
+                        className="w-full bg-white border border-slate-300 rounded-xl px-3 py-1.5 text-xs text-slate-900 font-medium"
                       />
-                    </div>
-
-                    <div>
-                      <label className="text-xs font-bold text-slate-800 block mb-1">GCash Account Name *</label>
                       <input
                         type="text"
-                        required
                         value={settings.gcash_name}
                         onChange={(e) => setSettings({ ...settings, gcash_name: e.target.value })}
-                        placeholder="e.g. BEST INC. BALAMBAN"
-                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-lime-600 font-medium"
+                        placeholder="GCash Account Name"
+                        className="w-full bg-white border border-slate-300 rounded-xl px-3 py-1.5 text-xs text-slate-900 font-medium"
+                      />
+                      <input
+                        type="text"
+                        value={settings.qr_code_url}
+                        onChange={(e) => setSettings({ ...settings, qr_code_url: e.target.value })}
+                        placeholder="GCash QR Code Image URL"
+                        className="w-full bg-white border border-slate-300 rounded-xl px-3 py-1.5 text-xs text-slate-900 font-medium"
                       />
                     </div>
 
-                    <div>
-                      <label className="text-xs font-bold text-slate-800 block mb-1">Upload QR Code Image File *</label>
-                      <div className="space-y-2">
-                        <label className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-300 text-xs font-bold cursor-pointer transition text-slate-800 shadow-xs">
-                          <Upload className="w-4 h-4 text-lime-600" />
-                          <span>Select QR Code Image File...</span>
-                          <input type="file" accept="image/*" onChange={handleQRImageFileUpload} className="hidden" />
-                        </label>
-                        <p className="text-[11px] text-slate-500 font-medium">O i-paste ang Image URL sa ubos:</p>
-                        <input
-                          type="text"
-                          required
-                          value={settings.qr_code_url}
-                          onChange={(e) => setSettings({ ...settings, qr_code_url: e.target.value })}
-                          placeholder="https://..."
-                          className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:border-lime-600 font-medium"
-                        />
-                      </div>
+                    {/* Maya Settings */}
+                    <div className="p-3 bg-emerald-50/60 rounded-2xl border border-emerald-200 space-y-2">
+                      <p className="text-xs font-black text-emerald-900">Maya Details:</p>
+                      <input
+                        type="text"
+                        value={settings.maya_number || ''}
+                        onChange={(e) => setSettings({ ...settings, maya_number: e.target.value })}
+                        placeholder="Maya Number"
+                        className="w-full bg-white border border-slate-300 rounded-xl px-3 py-1.5 text-xs text-slate-900 font-medium"
+                      />
+                      <input
+                        type="text"
+                        value={settings.maya_name || ''}
+                        onChange={(e) => setSettings({ ...settings, maya_name: e.target.value })}
+                        placeholder="Maya Account Name"
+                        className="w-full bg-white border border-slate-300 rounded-xl px-3 py-1.5 text-xs text-slate-900 font-medium"
+                      />
+                      <input
+                        type="text"
+                        value={settings.maya_qr_url || ''}
+                        onChange={(e) => setSettings({ ...settings, maya_qr_url: e.target.value })}
+                        placeholder="Maya QR Code Image URL"
+                        className="w-full bg-white border border-slate-300 rounded-xl px-3 py-1.5 text-xs text-slate-900 font-medium"
+                      />
+                    </div>
+
+                    {/* Landbank Settings */}
+                    <div className="p-3 bg-teal-50/60 rounded-2xl border border-teal-200 space-y-2">
+                      <p className="text-xs font-black text-teal-900">Landbank Details:</p>
+                      <input
+                        type="text"
+                        value={settings.landbank_number || ''}
+                        onChange={(e) => setSettings({ ...settings, landbank_number: e.target.value })}
+                        placeholder="Landbank Account Number (e.g. 1234-5678-9012)"
+                        className="w-full bg-white border border-slate-300 rounded-xl px-3 py-1.5 text-xs text-slate-900 font-medium"
+                      />
+                      <input
+                        type="text"
+                        value={settings.landbank_name || ''}
+                        onChange={(e) => setSettings({ ...settings, landbank_name: e.target.value })}
+                        placeholder="Landbank Account Name"
+                        className="w-full bg-white border border-slate-300 rounded-xl px-3 py-1.5 text-xs text-slate-900 font-medium"
+                      />
+                      <input
+                        type="text"
+                        value={settings.landbank_qr_url || ''}
+                        onChange={(e) => setSettings({ ...settings, landbank_qr_url: e.target.value })}
+                        placeholder="Landbank QR Code Image URL"
+                        className="w-full bg-white border border-slate-300 rounded-xl px-3 py-1.5 text-xs text-slate-900 font-medium"
+                      />
                     </div>
 
                     <div className="pt-2">

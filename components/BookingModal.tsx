@@ -30,7 +30,7 @@ export default function BookingModal({ court, onClose, onBookingSuccess }: Booki
   const [customerName, setCustomerName] = useState('');
   const [customerEmail, setCustomerEmail] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState<'GCash' | 'Maya' | 'Pay at Court'>('GCash');
+  const [paymentMethod, setPaymentMethod] = useState<'GCash' | 'Maya' | 'Landbank'>('GCash');
   const [notes, setNotes] = useState('');
 
   // Equipment add-ons
@@ -59,7 +59,7 @@ export default function BookingModal({ court, onClose, onBookingSuccess }: Booki
       try {
         const bookings = await getBookingsForDate(selectedDate);
         const slotsForThisCourt = bookings
-          .filter(b => b.court_id === court?.id)
+          .filter(b => b.court_id === court?.id || (b.court_name && court?.name && b.court_name === court?.name))
           .map(b => b.start_time);
         setBookedSlots(slotsForThisCourt);
         
@@ -124,7 +124,7 @@ export default function BookingModal({ court, onClose, onBookingSuccess }: Booki
       total_amount: totalPrice,
       equipment_rentals: rentals,
       payment_method: paymentMethod,
-      payment_status: paymentMethod === 'Pay at Court' ? 'Pending' : 'Paid',
+      payment_status: 'Paid',
       status: 'Confirmed',
       notes
     };
@@ -143,16 +143,16 @@ export default function BookingModal({ court, onClose, onBookingSuccess }: Booki
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
-      <div className="bg-white border border-slate-200 rounded-3xl max-w-2xl w-full overflow-hidden shadow-2xl my-auto animate-in fade-in zoom-in-95 duration-200 text-slate-900">
+      <div className="bg-white border border-slate-200 rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl my-auto animate-in fade-in zoom-in-95 duration-200 text-slate-900">
         
         {/* Modal Header */}
         <div className="bg-slate-50 px-6 py-4 border-b border-slate-200 flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 rounded-lg bg-lime-100 text-lime-700 flex items-center justify-center font-bold">
-              <Ticket className="w-4 h-4" />
+            <div className="w-9 h-9 rounded-xl bg-lime-100 text-lime-800 flex items-center justify-center font-bold border border-lime-300">
+              <Ticket className="w-5 h-5 text-lime-700" />
             </div>
             <div>
-              <h2 className="text-base font-extrabold text-slate-900 tracking-tight">
+              <h2 className="text-base font-black text-slate-900 tracking-tight">
                 {confirmedBooking ? 'Booking Confirmed!' : `Reserve ${court.name}`}
               </h2>
               <p className="text-[11px] text-slate-500 font-medium">Balamban Extensive Skills and Technology, Inc.</p>
@@ -161,7 +161,7 @@ export default function BookingModal({ court, onClose, onBookingSuccess }: Booki
 
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-600 transition"
+            className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200 transition"
           >
             <X className="w-5 h-5" />
           </button>
@@ -170,37 +170,33 @@ export default function BookingModal({ court, onClose, onBookingSuccess }: Booki
         {/* Confirmation Screen */}
         {confirmedBooking ? (
           <div className="p-6 sm:p-8 space-y-6 text-center">
-            <div className="w-16 h-16 bg-lime-100 rounded-full flex items-center justify-center mx-auto text-lime-700 border border-lime-300">
-              <CheckCircle2 className="w-10 h-10" />
+            <div className="w-14 h-14 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto border border-emerald-300 shadow-sm">
+              <CheckCircle2 className="w-8 h-8" />
             </div>
 
             <div>
-              <span className="px-3 py-1 bg-lime-100 text-lime-800 text-xs font-mono font-bold rounded-full border border-lime-300">
-                REF: {confirmedBooking.reference_no}
+              <span className="inline-block px-3 py-1 rounded-full bg-lime-100 text-lime-800 font-mono font-bold text-xs border border-lime-300 mb-1">
+                Ref: {confirmedBooking.reference_no}
               </span>
-              <h3 className="text-2xl font-black text-slate-900 mt-2">Daghan Kaayong Salamat!</h3>
-              <p className="text-slate-600 text-xs sm:text-sm mt-1 font-medium">
-                Na-confirm na ang imong Pickleball court slot sa Balamban BEST Inc.
+              <h3 className="text-xl font-black text-slate-900">Reservation Confirmed!</h3>
+              <p className="text-xs text-slate-600 mt-1 font-medium">
+                Salamat, <strong>{confirmedBooking.customer_name}</strong>! Na-book na ang {court.name}.
               </p>
             </div>
 
             {/* Receipt Summary Card */}
-            <div className="bg-slate-50 p-4 sm:p-5 rounded-2xl border border-slate-200 text-left space-y-3 font-sans text-xs sm:text-sm">
+            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 text-xs text-left space-y-2">
               <div className="flex justify-between border-b border-slate-200 pb-2">
-                <span className="text-slate-500 font-medium">Court:</span>
-                <span className="font-bold text-slate-900">{court.name}</span>
+                <span className="text-slate-500 font-medium">Court & Schedule:</span>
+                <strong className="text-slate-900">{court.name} ({confirmedBooking.booking_date})</strong>
               </div>
               <div className="flex justify-between border-b border-slate-200 pb-2">
-                <span className="text-slate-500 font-medium">Date & Hourly Slot:</span>
-                <span className="font-bold text-lime-700">{confirmedBooking.booking_date} ({confirmedBooking.time_slot_label})</span>
+                <span className="text-slate-500 font-medium">Time Slot:</span>
+                <span className="font-bold text-lime-800 font-mono">{confirmedBooking.time_slot_label}</span>
               </div>
               <div className="flex justify-between border-b border-slate-200 pb-2">
-                <span className="text-slate-500 font-medium">Customer Name:</span>
-                <span className="font-semibold text-slate-900">{confirmedBooking.customer_name} ({confirmedBooking.customer_phone})</span>
-              </div>
-              <div className="flex justify-between border-b border-slate-200 pb-2">
-                <span className="text-slate-500 font-medium">Payment Option:</span>
-                <span className="font-semibold text-slate-800">{confirmedBooking.payment_method}</span>
+                <span className="text-slate-500 font-medium">Payment Method:</span>
+                <span className="font-semibold text-slate-800">{confirmedBooking.payment_method} QR</span>
               </div>
               <div className="flex justify-between text-base font-black pt-1">
                 <span className="text-slate-800">Total Amount:</span>
@@ -209,28 +205,38 @@ export default function BookingModal({ court, onClose, onBookingSuccess }: Booki
             </div>
 
             {/* Admin QR Code Scan-to-Pay Container */}
-            {confirmedBooking.payment_method === 'GCash' && (
-              <div className="bg-blue-50/80 border border-blue-200 p-5 rounded-2xl text-center space-y-3">
-                <div className="flex items-center justify-center gap-2 text-blue-700 font-bold text-xs">
-                  <QrCode className="w-4 h-4" />
-                  <span>Scan QR Code to Pay via GCash</span>
-                </div>
-
-                <div className="w-40 h-40 bg-white p-2.5 rounded-2xl mx-auto shadow-md border-2 border-lime-500 overflow-hidden">
-                  <img
-                    src={adminSettings.qr_code_url}
-                    alt="Official Payment QR Code"
-                    className="w-full h-full object-contain"
-                  />
-                </div>
-
-                <div>
-                  <p className="text-xs font-mono font-bold text-lime-700">{adminSettings.gcash_number}</p>
-                  <p className="text-xs font-bold text-slate-900">{adminSettings.gcash_name}</p>
-                  <p className="text-[11px] text-slate-600 mt-1 font-medium">Palihug i-send ang <strong>₱{confirmedBooking.total_amount}</strong> ug i-pakita ang Ref No. inig abot sa venue.</p>
-                </div>
+            <div className="bg-blue-50/80 border border-blue-200 p-5 rounded-2xl text-center space-y-3">
+              <div className="flex items-center justify-center gap-2 text-blue-700 font-bold text-xs">
+                <QrCode className="w-4 h-4" />
+                <span>Scan QR Code to Pay via {confirmedBooking.payment_method}</span>
               </div>
-            )}
+
+              <div className="w-44 h-44 bg-white p-2.5 rounded-2xl mx-auto shadow-md border-2 border-lime-500 overflow-hidden">
+                <img
+                  src={
+                    confirmedBooking.payment_method === 'Maya' ? (adminSettings.maya_qr_url || adminSettings.qr_code_url) :
+                    confirmedBooking.payment_method === 'Landbank' ? (adminSettings.landbank_qr_url || adminSettings.qr_code_url) :
+                    adminSettings.qr_code_url
+                  }
+                  alt={`Official ${confirmedBooking.payment_method} Payment QR Code`}
+                  className="w-full h-full object-contain"
+                />
+              </div>
+
+              <div>
+                <p className="text-xs font-mono font-bold text-lime-700">
+                  {confirmedBooking.payment_method === 'Maya' ? adminSettings.maya_number :
+                   confirmedBooking.payment_method === 'Landbank' ? adminSettings.landbank_number :
+                   adminSettings.gcash_number}
+                </p>
+                <p className="text-xs font-bold text-slate-900">
+                  {confirmedBooking.payment_method === 'Maya' ? adminSettings.maya_name :
+                   confirmedBooking.payment_method === 'Landbank' ? adminSettings.landbank_name :
+                   adminSettings.gcash_name}
+                </p>
+                <p className="text-[11px] text-slate-600 mt-1 font-medium">Palihug i-send ang <strong>₱{confirmedBooking.total_amount}</strong> ug i-pakita ang Ref No. inig abot sa venue.</p>
+              </div>
+            </div>
 
             <button
               onClick={onClose}
@@ -292,7 +298,7 @@ export default function BookingModal({ court, onClose, onBookingSuccess }: Booki
                       onClick={() => setSelectedSlot(slot)}
                       className={`p-2.5 rounded-xl text-xs font-semibold text-left transition-all border ${
                         isBooked
-                          ? 'bg-rose-50/80 border-rose-200 text-rose-500 line-through cursor-not-allowed font-medium'
+                          ? 'bg-rose-50/80 border-rose-200 text-rose-500 line-through cursor-not-allowed font-medium opacity-60'
                           : isSelected
                           ? 'bg-lime-500 text-slate-950 border-lime-600 shadow-sm font-extrabold'
                           : 'bg-slate-50 border-slate-200 text-slate-800 hover:border-lime-500'
@@ -300,7 +306,7 @@ export default function BookingModal({ court, onClose, onBookingSuccess }: Booki
                     >
                       <div className="font-extrabold text-[11px] tracking-tight">{slot.label}</div>
                       <div className={`text-[10px] font-bold mt-0.5 ${
-                        isBooked ? 'text-rose-600' : isSelected ? 'text-slate-950 font-black' : 'text-emerald-700'
+                        isBooked ? 'text-rose-600 font-extrabold' : isSelected ? 'text-slate-950 font-black' : 'text-emerald-700'
                       }`}>
                         {isBooked ? '❌ TAKEN / BOOKED' : '✅ AVAILABLE'}
                       </div>
@@ -419,22 +425,29 @@ export default function BookingModal({ court, onClose, onBookingSuccess }: Booki
             {/* 5. Payment Option & Summary */}
             <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-800">Payment Option:</span>
-                <div className="flex items-center space-x-2">
+                <span className="text-xs font-bold text-slate-800">Select Scan-to-Pay QR:</span>
+                <div className="flex items-center space-x-1.5">
                   <button
                     type="button"
                     onClick={() => setPaymentMethod('GCash')}
-                    className={`px-3 py-1 rounded-lg text-xs font-bold transition ${
-                      paymentMethod === 'GCash' ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-700'
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                      paymentMethod === 'GCash' ? 'bg-blue-600 text-white shadow-xs' : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
                     }`}
                   >GCash QR</button>
                   <button
                     type="button"
-                    onClick={() => setPaymentMethod('Pay at Court')}
-                    className={`px-3 py-1 rounded-lg text-xs font-bold transition ${
-                      paymentMethod === 'Pay at Court' ? 'bg-amber-600 text-white' : 'bg-slate-200 text-slate-700'
+                    onClick={() => setPaymentMethod('Maya')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                      paymentMethod === 'Maya' ? 'bg-emerald-600 text-white shadow-xs' : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
                     }`}
-                  >Pay at Venue</button>
+                  >Maya QR</button>
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod('Landbank')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                      paymentMethod === 'Landbank' ? 'bg-teal-700 text-white shadow-xs' : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
+                    }`}
+                  >Landbank QR</button>
                 </div>
               </div>
 

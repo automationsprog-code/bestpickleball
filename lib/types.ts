@@ -31,7 +31,7 @@ export interface Booking {
   end_time: string;     // 07:00
   total_amount: number;
   equipment_rentals: EquipmentRental[];
-  payment_method: 'GCash' | 'Maya' | 'Pay at Court';
+  payment_method: 'GCash' | 'Maya' | 'Landbank';
   payment_status: 'Pending' | 'Paid' | 'Verified';
   status: 'Confirmed' | 'Pending' | 'Completed' | 'Cancelled';
   notes?: string;
@@ -45,6 +45,9 @@ export interface AdminSettings {
   maya_number: string;
   maya_name: string;
   maya_qr_url: string;
+  landbank_number: string;
+  landbank_name: string;
+  landbank_qr_url: string;
   opening_hour?: number; // e.g. 6 (6 AM)
   closing_hour?: number; // e.g. 22 (10 PM)
 
@@ -62,6 +65,14 @@ export interface AdminSettings {
   feature_2_desc?: string;
   feature_3_title?: string;
   feature_3_desc?: string;
+}
+
+export interface ChatMessage {
+  id: string;
+  sender: 'user' | 'admin' | 'bot';
+  sender_name: string;
+  text: string;
+  timestamp: string;
 }
 
 export type ViewportMode = 'responsive' | 'desktop' | 'tablet' | 'mobile';

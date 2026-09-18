@@ -40,6 +40,9 @@ export const DEFAULT_ADMIN_SETTINGS: AdminSettings = {
   maya_number: '0917-888-9900',
   maya_name: 'BEST INC. BALAMBAN',
   maya_qr_url: 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=MAYA_BALAMBAN_BEST_INC_09178889900',
+  landbank_number: '1234-5678-9012',
+  landbank_name: 'BEST INC. BALAMBAN',
+  landbank_qr_url: 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=LANDBANK_BALAMBAN_BEST_INC_123456789012',
   opening_hour: 6,
   closing_hour: 22,
 

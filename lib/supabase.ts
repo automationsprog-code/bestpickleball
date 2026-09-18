@@ -202,27 +202,6 @@ export async function updateCourtStatus(id: string, is_active: boolean): Promise
   return updateCourtDetails(id, { is_active });
 }
 
-export async function getBookingsForDate(date: string): Promise<Booking[]> {
-  if (supabase) {
-    try {
-      const { data, error } = await supabase.from('bookings').select('*').eq('booking_date', date);
-      if (!error && data) {
-        return data as Booking[];
-      }
-    } catch (err) {
-      console.warn('Supabase fetch bookings error, using local fallback:', err);
-    }
-  }
-
-  if (typeof window !== 'undefined') {
-    const local = localStorage.getItem('balamban_pickleball_bookings');
-    const allBookings: Booking[] = local ? JSON.parse(local) : INITIAL_BOOKINGS;
-    return allBookings.filter(b => b.booking_date === date && b.status !== 'Cancelled');
-  }
-
-  return INITIAL_BOOKINGS.filter(b => b.booking_date === date);
-}
-
 export async function createBooking(newBooking: Omit<Booking, 'id' | 'created_at'>): Promise<Booking> {
   const generatedId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : 'b-' + Date.now();
   const created_at = new Date().toISOString();
@@ -233,44 +212,69 @@ export async function createBooking(newBooking: Omit<Booking, 'id' | 'created_at
     created_at
   };
 
-  if (supabase) {
+  // 1. ALWAYS store locally first so it is immediately locked & available in UI
+  if (typeof window !== 'undefined') {
     try {
-      const { data, error } = await supabase.from('bookings').insert([booking]).select().single();
-      if (!error && data) {
-        return data as Booking;
-      }
-    } catch (err) {
-      console.warn('Supabase insert error, storing locally:', err);
+      const local = localStorage.getItem('balamban_pickleball_bookings');
+      const existing: Booking[] = local ? JSON.parse(local) : INITIAL_BOOKINGS;
+      const updated = [booking, ...existing.filter(b => b.id !== booking.id && b.reference_no !== booking.reference_no)];
+      localStorage.setItem('balamban_pickleball_bookings', JSON.stringify(updated));
+    } catch (e) {
+      console.error(e);
     }
   }
 
-  if (typeof window !== 'undefined') {
-    const local = localStorage.getItem('balamban_pickleball_bookings');
-    const existing: Booking[] = local ? JSON.parse(local) : INITIAL_BOOKINGS;
-    const updated = [booking, ...existing];
-    localStorage.setItem('balamban_pickleball_bookings', JSON.stringify(updated));
+  // 2. Try inserting into Supabase
+  if (supabase) {
+    try {
+      const { data, error } = await supabase.from('bookings').insert([booking]).select().single();
+      if (error) {
+        console.warn('Supabase insert booking warning (saved locally):', error);
+      } else if (data) {
+        return data as Booking;
+      }
+    } catch (err) {
+      console.warn('Supabase insert booking error, stored locally:', err);
+    }
   }
 
   return booking;
 }
 
 export async function getAllUserBookings(): Promise<Booking[]> {
+  let localBookings: Booking[] = INITIAL_BOOKINGS;
+  if (typeof window !== 'undefined') {
+    const local = localStorage.getItem('balamban_pickleball_bookings');
+    if (local) localBookings = JSON.parse(local);
+  }
+
+  let remoteBookings: Booking[] = [];
   if (supabase) {
     try {
       const { data, error } = await supabase.from('bookings').select('*').order('created_at', { ascending: false });
-      if (!error && data && data.length > 0) {
-        return data as Booking[];
+      if (!error && data) {
+        remoteBookings = data as Booking[];
       }
     } catch (err) {
       console.warn('Supabase fetch all bookings error:', err);
     }
   }
 
+  // Merge local & remote bookings, avoiding duplicates by id or reference_no
+  const mergedMap = new Map<string, Booking>();
+  localBookings.forEach(b => mergedMap.set(b.id || b.reference_no, b));
+  remoteBookings.forEach(b => mergedMap.set(b.id || b.reference_no, b));
+
+  const allMerged = Array.from(mergedMap.values());
   if (typeof window !== 'undefined') {
-    const local = localStorage.getItem('balamban_pickleball_bookings');
-    return local ? JSON.parse(local) : INITIAL_BOOKINGS;
+    localStorage.setItem('balamban_pickleball_bookings', JSON.stringify(allMerged));
   }
-  return INITIAL_BOOKINGS;
+  return allMerged;
+}
+
+export async function getBookingsForDate(date: string): Promise<Booking[]> {
+  const allBookings = await getAllUserBookings();
+  return allBookings.filter(b => b.booking_date === date && b.status !== 'Cancelled');
 }
 
 export async function updateBookingStatus(id: string, status: Booking['status'], paymentStatus?: Booking['payment_status']): Promise<boolean> {

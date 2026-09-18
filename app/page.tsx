@@ -8,6 +8,7 @@ import BookingModal from '@/components/BookingModal';
 import OwnerPortalModal from '@/components/OwnerPortalModal';
 import LocationMap from '@/components/LocationMap';
 import MyBookings from '@/components/MyBookings';
+import ChatSupport from '@/components/ChatSupport';
 import Footer from '@/components/Footer';
 import { Court, Booking, AdminSettings } from '@/lib/types';
 import { getCourts, getAllUserBookings, getAdminSettings } from '@/lib/supabase';
@@ -217,6 +218,9 @@ export default function Home() {
           }}
         />
       )}
+
+      {/* Live Chat Support Floating Widget */}
+      <ChatSupport settings={settings} />
 
     </div>
   );
