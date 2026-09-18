@@ -12,6 +12,7 @@ import ChatSupport from '@/components/ChatSupport';
 import Footer from '@/components/Footer';
 import { Court, Booking, AdminSettings } from '@/lib/types';
 import { getCourts, getAllUserBookings, getAdminSettings, supabase } from '@/lib/supabase';
+import { purgeStaleLocalCaches } from '@/lib/version';
 import { Trophy, Zap, Sparkles, ShieldCheck, AlertCircle } from 'lucide-react';
 
 import { INITIAL_COURTS } from '@/lib/data';
@@ -26,6 +27,7 @@ export default function Home() {
   const [userBookingCount, setUserBookingCount] = useState<number>(0);
 
   const loadInitialData = async () => {
+    purgeStaleLocalCaches(); // Wipe stale localStorage on version mismatch (all devices)
     const courtsData = await getCourts();
     setCourts(courtsData);
 
