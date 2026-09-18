@@ -111,7 +111,7 @@ export async function getCourts(): Promise<Court[]> {
   if (supabase) {
     try {
       const { data, error } = await supabase.from('courts').select('*').order('created_at', { ascending: true });
-      if (!error && data) {
+      if (!error && data && data.length > 0) {
         baseCourts = data as Court[];
       }
     } catch (err) {
@@ -130,7 +130,12 @@ export async function getCourts(): Promise<Court[]> {
   customCourts.forEach(c => mergedMap.set(c.id, c));
 
   const allMerged = Array.from(mergedMap.values());
-  const validCourts = allMerged.filter(c => !deletedIds.includes(c.id));
+  let validCourts = allMerged.filter(c => !deletedIds.includes(c.id));
+
+  // Safety fallback: If validCourts is empty, always show INITIAL_COURTS
+  if (validCourts.length === 0) {
+    validCourts = INITIAL_COURTS;
+  }
 
   if (typeof window !== 'undefined') {
     localStorage.setItem('balamban_pickleball_courts', JSON.stringify(validCourts));
