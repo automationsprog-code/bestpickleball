@@ -2,8 +2,11 @@ import { createClient } from '@supabase/supabase-js';
 import { Court, Booking, AdminSettings } from './types';
 import { INITIAL_COURTS, INITIAL_BOOKINGS, DEFAULT_ADMIN_SETTINGS } from './data';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+const DEFAULT_SUPABASE_URL = 'https://ljzmpmflktjcsmzvltjr.supabase.co';
+const DEFAULT_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxqem1wbWZsa3RqY3NtenZsdGpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk2MjcyMzgsImV4cCI6MjEwNTIwMzIzOH0.QIbb9fkDyZqr6BGuqr9e-b580V7lnKxnFUA8lVZGWY8';
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || DEFAULT_SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_ANON_KEY;
 
 const isSupabaseConfigured = 
   supabaseUrl.length > 0 && 
