@@ -145,15 +145,31 @@ export async function getCourts(): Promise<Court[]> {
   const allMerged = Array.from(mergedMap.values());
   let validCourts = allMerged.filter(c => !deletedIds.includes(c.id));
 
-  if (validCourts.length === 0) {
-    validCourts = INITIAL_COURTS;
+  // Deduplicate courts by name so duplicate cards never appear on the home page
+  const nameMap = new Map<string, Court>();
+  validCourts.forEach(c => {
+    const key = c.name.trim().toLowerCase();
+    if (!nameMap.has(key)) {
+      nameMap.set(key, c);
+    } else {
+      const existing = nameMap.get(key)!;
+      if ((!existing.image_url || existing.image_url.length < 20) && c.image_url && c.image_url.length >= 20) {
+        nameMap.set(key, c);
+      }
+    }
+  });
+
+  const finalDeduplicatedCourts = Array.from(nameMap.values());
+
+  if (finalDeduplicatedCourts.length === 0) {
+    return INITIAL_COURTS;
   }
 
   if (typeof window !== 'undefined') {
-    localStorage.setItem('balamban_pickleball_courts', JSON.stringify(validCourts));
+    localStorage.setItem('balamban_pickleball_courts', JSON.stringify(finalDeduplicatedCourts));
   }
 
-  return validCourts;
+  return finalDeduplicatedCourts;
 }
 
 export async function createCourt(newCourtData: Omit<Court, 'id'>): Promise<Court> {
