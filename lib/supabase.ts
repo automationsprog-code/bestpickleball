@@ -109,33 +109,42 @@ export async function getCourts(): Promise<Court[]> {
   const deletedIds = getDeletedCourtIds();
   const customCourts = getCustomCreatedCourts();
 
-  let baseCourts: Court[] = INITIAL_COURTS;
+  let remoteCourts: Court[] = [];
 
   if (supabase) {
     try {
       const { data, error } = await supabase.from('courts').select('*').order('created_at', { ascending: true });
       if (!error && data && data.length > 0) {
-        baseCourts = data as Court[];
+        remoteCourts = data as Court[];
+
+        // Auto-sync any custom courts created locally that are missing in Supabase
+        const remoteIds = new Set(remoteCourts.map(r => r.id));
+        const unsynced = customCourts.filter(c => !remoteIds.has(c.id));
+        if (unsynced.length > 0) {
+          await supabase.from('courts').insert(unsynced);
+          const { data: refreshed } = await supabase.from('courts').select('*').order('created_at', { ascending: true });
+          if (refreshed) remoteCourts = refreshed as Court[];
+        }
       }
     } catch (err) {
       console.warn('Supabase fetch courts error, using local fallback:', err);
     }
-  } else if (typeof window !== 'undefined') {
-    const local = localStorage.getItem('balamban_pickleball_courts');
-    if (local !== null) {
-      baseCourts = JSON.parse(local);
-    }
   }
 
-  // Merge baseCourts with customCourts so created courts always show up
   const mergedMap = new Map<string, Court>();
-  baseCourts.forEach(c => mergedMap.set(c.id, c));
+
+  // 1. Add INITIAL_COURTS first
+  INITIAL_COURTS.forEach(c => mergedMap.set(c.id, c));
+
+  // 2. Add local customCreatedCourts next
   customCourts.forEach(c => mergedMap.set(c.id, c));
+
+  // 3. Add remoteCourts LAST so Supabase Cloud DB is the ultimate single source of truth across ALL devices!
+  remoteCourts.forEach(c => mergedMap.set(c.id, c));
 
   const allMerged = Array.from(mergedMap.values());
   let validCourts = allMerged.filter(c => !deletedIds.includes(c.id));
 
-  // Safety fallback: If validCourts is empty, always show INITIAL_COURTS
   if (validCourts.length === 0) {
     validCourts = INITIAL_COURTS;
   }
@@ -175,29 +184,39 @@ export async function createCourt(newCourtData: Omit<Court, 'id'>): Promise<Cour
 export async function updateCourtDetails(id: string, updates: Partial<Court>): Promise<boolean> {
   let success = false;
 
-  if (typeof window !== 'undefined') {
-    const custom = getCustomCreatedCourts();
-    const target = custom.find(c => c.id === id);
-    if (target) {
-      saveCustomCreatedCourt({ ...target, ...updates });
-    }
-  }
-
+  // 1. Update Supabase Cloud DB first
   if (supabase) {
     try {
       const { error } = await supabase.from('courts').update(updates).eq('id', id);
       if (!error) success = true;
+      else console.warn('Supabase update court warning:', error);
     } catch (err) {
       console.warn('Supabase update court details error:', err);
     }
   }
 
+  // 2. Update local storage caches
   if (typeof window !== 'undefined') {
-    const existing = await getCourts();
-    const updated = existing.map(c => c.id === id ? { ...c, ...updates } : c);
-    localStorage.setItem('balamban_pickleball_courts', JSON.stringify(updated));
+    const custom = getCustomCreatedCourts();
+    const targetIndex = custom.findIndex(c => c.id === id);
+    if (targetIndex !== -1) {
+      custom[targetIndex] = { ...custom[targetIndex], ...updates };
+      localStorage.setItem('balamban_custom_created_courts', JSON.stringify(custom));
+    }
+
+    const local = localStorage.getItem('balamban_pickleball_courts');
+    if (local) {
+      try {
+        const existing: Court[] = JSON.parse(local);
+        const updated = existing.map(c => c.id === id ? { ...c, ...updates } : c);
+        localStorage.setItem('balamban_pickleball_courts', JSON.stringify(updated));
+      } catch (e) {
+        console.error(e);
+      }
+    }
     success = true;
   }
+
   return success;
 }
 
