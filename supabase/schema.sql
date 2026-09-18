@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS public.bookings (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 3. SETTINGS TABLE (ADMIN QR CODE & PAYMENTS)
+-- 3. SETTINGS TABLE (ADMIN QR CODE & PAYMENTS & LIVE WEBSITE CONTENT)
 CREATE TABLE IF NOT EXISTS public.settings (
   id VARCHAR(50) PRIMARY KEY DEFAULT 'default',
   gcash_number VARCHAR(100) DEFAULT '0917-888-9900',
@@ -50,8 +50,23 @@ CREATE TABLE IF NOT EXISTS public.settings (
   maya_number VARCHAR(100) DEFAULT '0917-888-9900',
   maya_name VARCHAR(255) DEFAULT 'BEST INC. BALAMBAN',
   maya_qr_url TEXT DEFAULT 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=MAYA_BALAMBAN_BEST_INC_09178889900',
+  landbank_number VARCHAR(100) DEFAULT '1234-5678-9012',
+  landbank_name VARCHAR(255) DEFAULT 'BEST INC. BALAMBAN',
+  landbank_qr_url TEXT DEFAULT 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=LANDBANK_BALAMBAN_BEST_INC_123456789012',
   opening_hour INTEGER DEFAULT 6,
   closing_hour INTEGER DEFAULT 22,
+  hero_title TEXT DEFAULT 'Book Your Pickleball Court in Balamban, Cebu',
+  hero_subtitle TEXT DEFAULT 'Duwa na og Pickleball sa pinakanindot ug kompleto nga venue sa Balamban!',
+  contact_phone VARCHAR(100) DEFAULT '0917-888-9900',
+  contact_landline VARCHAR(100) DEFAULT '(032) 492-1234',
+  contact_email VARCHAR(255) DEFAULT 'booking@balambanbest.ph',
+  location_address TEXT DEFAULT 'BALAMBAN EXTENSIVE SKILLS AND TECHNOLOGY, INC. (BEST Inc.) Poblacion / Bano, Balamban, Cebu 6041',
+  feature_1_title VARCHAR(255) DEFAULT 'Non-Slip Cushion Surface',
+  feature_1_desc TEXT DEFAULT 'Pro-grade acrylic court surfacing system reducing knee strain and ensuring maximum ball bounce accuracy.',
+  feature_2_title VARCHAR(255) DEFAULT 'Night Lighting & Roof',
+  feature_2_desc TEXT DEFAULT 'High-lumen LED floodlights for seamless evening matches up to 10:00 PM regardless of rain or heat.',
+  feature_3_title VARCHAR(255) DEFAULT 'Paddle Rental & Coaching',
+  feature_3_desc TEXT DEFAULT 'Wala kay paddle? No problem! Naa tay pickleball paddle rentals (₱50/pc) ug certified coaches available.',
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 

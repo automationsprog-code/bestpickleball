@@ -86,6 +86,21 @@ function removeCustomCreatedCourt(id: string) {
   }
 }
 
+function generateValidUUID(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    try {
+      return crypto.randomUUID();
+    } catch (e) {
+      // Fallback below
+    }
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
 // Helper functions that query Supabase OR fallback smoothly to localStorage
 export async function getCourts(): Promise<Court[]> {
   const deletedIds = getDeletedCourtIds();
@@ -125,7 +140,7 @@ export async function getCourts(): Promise<Court[]> {
 }
 
 export async function createCourt(newCourtData: Omit<Court, 'id'>): Promise<Court> {
-  const generatedId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : 'c-' + Date.now();
+  const generatedId = generateValidUUID();
   const court: Court = {
     ...newCourtData,
     id: generatedId
@@ -203,7 +218,7 @@ export async function updateCourtStatus(id: string, is_active: boolean): Promise
 }
 
 export async function createBooking(newBooking: Omit<Booking, 'id' | 'created_at'>): Promise<Booking> {
-  const generatedId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : 'b-' + Date.now();
+  const generatedId = generateValidUUID();
   const created_at = new Date().toISOString();
   
   const booking: Booking = {
