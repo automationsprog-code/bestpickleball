@@ -3,7 +3,16 @@
 import React from 'react';
 import { MapPin, Phone, Mail, Trophy, Heart } from 'lucide-react';
 
-export default function Footer() {
+import { AdminSettings } from '@/lib/types';
+
+interface FooterProps {
+  settings?: AdminSettings;
+}
+
+export default function Footer({ settings }: FooterProps) {
+  const phoneText = settings?.contact_phone || '0917-888-9900';
+  const emailText = settings?.contact_email || 'booking@balambanbest.ph';
+
   return (
     <footer id="contact" className="bg-white border-t border-slate-200 py-10 px-4 sm:px-6 lg:px-8 text-slate-600 text-xs">
       <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
@@ -23,8 +32,8 @@ export default function Footer() {
         <div className="space-y-2 font-medium">
           <h4 className="font-black text-slate-900 text-sm">Contact & Booking</h4>
           <p className="flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5 text-lime-600" /> Balamban, Cebu 6041</p>
-          <p className="flex items-center gap-1.5"><Phone className="w-3.5 h-3.5 text-lime-600" /> 0917-888-9900</p>
-          <p className="flex items-center gap-1.5"><Mail className="w-3.5 h-3.5 text-lime-600" /> booking@balambanbest.ph</p>
+          <p className="flex items-center gap-1.5"><Phone className="w-3.5 h-3.5 text-lime-600" /> {phoneText}</p>
+          <p className="flex items-center gap-1.5"><Mail className="w-3.5 h-3.5 text-lime-600" /> {emailText}</p>
         </div>
 
         {/* Payment & Operating Hours */}

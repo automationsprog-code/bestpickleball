@@ -41,7 +41,22 @@ export const DEFAULT_ADMIN_SETTINGS: AdminSettings = {
   maya_name: 'BEST INC. BALAMBAN',
   maya_qr_url: 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=MAYA_BALAMBAN_BEST_INC_09178889900',
   opening_hour: 6,
-  closing_hour: 22
+  closing_hour: 22,
+
+  hero_title: 'Book Your Pickleball Court in Balamban, Cebu',
+  hero_subtitle: 'Duwa na og Pickleball sa pinakanindot ug kompleto nga venue sa Balamban! High-traction covered & outdoor courts with LED night lighting, paddle rentals, ug easy online slot reservations via Supabase & GCash.',
+
+  contact_phone: '0917-888-9900',
+  contact_landline: '(032) 492-1234',
+  contact_email: 'booking@balambanbest.ph',
+  location_address: 'BALAMBAN EXTENSIVE SKILLS AND TECHNOLOGY, INC. (BEST Inc.) Poblacion / Bano, Balamban, Cebu 6041',
+
+  feature_1_title: 'Non-Slip Cushion Surface',
+  feature_1_desc: 'Pro-grade acrylic court surfacing system reducing knee strain and ensuring maximum ball bounce accuracy.',
+  feature_2_title: 'Night Lighting & Roof',
+  feature_2_desc: 'High-lumen LED floodlights for seamless evening matches up to 10:00 PM regardless of rain or heat.',
+  feature_3_title: 'Paddle Rental & Coaching',
+  feature_3_desc: 'Wala kay paddle? No problem! Naa tay pickleball paddle rentals (₱50/pc) ug certified coaches available.'
 };
 
 export const INITIAL_COURTS: Court[] = [

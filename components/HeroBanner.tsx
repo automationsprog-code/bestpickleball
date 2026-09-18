@@ -3,13 +3,19 @@
 import React from 'react';
 import { MapPin, Calendar, Sun, Trophy, ExternalLink, Shield, Clock } from 'lucide-react';
 
+import { AdminSettings } from '@/lib/types';
+
 interface HeroBannerProps {
   onBookClick: () => void;
   onMapClick: () => void;
+  settings?: AdminSettings;
 }
 
-export default function HeroBanner({ onBookClick, onMapClick }: HeroBannerProps) {
+export default function HeroBanner({ onBookClick, onMapClick, settings }: HeroBannerProps) {
   const GOOGLE_MAPS_URL = "https://www.google.com/maps/place/BALAMBAN+EXTENSIVE+SKILLS+AND+TECHNOLOGY,+INC./@10.5124198,123.7272847,1193m/data=!3m2!1e3!4b1!4m6!3m5!1s0x33a909a00f7169d7:0xaef1d3f6c0a056e2!8m2!3d10.5124145!4d123.7298596!16s%2Fg%2F11ry0t7wjl?entry=ttu";
+
+  const title = settings?.hero_title || 'Book Your Pickleball Court in Balamban, Cebu';
+  const subtitle = settings?.hero_subtitle || 'Duwa na og Pickleball sa pinakanindot ug kompleto nga venue sa Balamban! High-traction covered & outdoor courts with LED night lighting, paddle rentals, ug easy online slot reservations via Supabase & GCash.';
 
   return (
     <div id="hero" className="relative overflow-hidden bg-gradient-to-b from-slate-100 via-lime-50/30 to-slate-50 pt-10 pb-16 px-4 sm:px-6 lg:px-8 border-b border-slate-200">
@@ -28,11 +34,11 @@ export default function HeroBanner({ onBookClick, onMapClick }: HeroBannerProps)
 
           {/* Main Heading */}
           <h1 className="text-3xl sm:text-5xl font-black text-slate-900 tracking-tight leading-tight">
-            Book Your Pickleball Court in <span className="text-lime-600">Balamban, Cebu</span>
+            {title}
           </h1>
 
           <p className="text-slate-600 text-sm sm:text-base leading-relaxed font-medium">
-            Duwa na og Pickleball sa pinakanindot ug kompleto nga venue sa Balamban! High-traction covered & outdoor courts with LED night lighting, paddle rentals, ug easy online slot reservations via Supabase & GCash.
+            {subtitle}
           </p>
 
           {/* Call to Actions */}

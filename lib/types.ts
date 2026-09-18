@@ -47,6 +47,21 @@ export interface AdminSettings {
   maya_qr_url: string;
   opening_hour?: number; // e.g. 6 (6 AM)
   closing_hour?: number; // e.g. 22 (10 PM)
+
+  // Editable Website Content Text
+  hero_title?: string;
+  hero_subtitle?: string;
+  contact_phone?: string;
+  contact_landline?: string;
+  contact_email?: string;
+  location_address?: string;
+
+  feature_1_title?: string;
+  feature_1_desc?: string;
+  feature_2_title?: string;
+  feature_2_desc?: string;
+  feature_3_title?: string;
+  feature_3_desc?: string;
 }
 
 export type ViewportMode = 'responsive' | 'desktop' | 'tablet' | 'mobile';

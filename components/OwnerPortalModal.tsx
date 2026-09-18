@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Booking, AdminSettings, Court } from '@/lib/types';
 import { getAllUserBookings, updateBookingStatus, getAdminSettings, updateAdminSettings, getCourts, createCourt, updateCourtDetails, updateCourtStatus, deleteCourt } from '@/lib/supabase';
 import { DEFAULT_ADMIN_SETTINGS } from '@/lib/data';
-import { X, ShieldCheck, QrCode, Search, User, CheckCircle2, Save, RefreshCw, AlertCircle, Lock, KeyRound, LogOut, Plus, Trophy, ToggleLeft, ToggleRight, Edit3, DollarSign, Image as ImageIcon, Upload, Trash2, Clock } from 'lucide-react';
+import { X, ShieldCheck, QrCode, Search, User, CheckCircle2, Save, RefreshCw, AlertCircle, Lock, KeyRound, LogOut, Plus, Trophy, ToggleLeft, ToggleRight, Edit3, DollarSign, Image as ImageIcon, Upload, Trash2, Clock, Globe, Sparkles, Phone, Zap } from 'lucide-react';
 
 interface OwnerPortalModalProps {
   onClose: () => void;
@@ -19,7 +19,7 @@ export default function OwnerPortalModal({ onClose, onCourtsUpdated }: OwnerPort
   const [loginError, setLoginError] = useState(false);
 
   // Tab & Data states
-  const [activeTab, setActiveTab] = useState<'bookings' | 'courts' | 'qrcode'>('bookings');
+  const [activeTab, setActiveTab] = useState<'bookings' | 'courts' | 'qrcode' | 'content'>('bookings');
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [courts, setCourts] = useState<Court[]>([]);
   const [loadingBookings, setLoadingBookings] = useState(true);
@@ -233,6 +233,7 @@ export default function OwnerPortalModal({ onClose, onCourtsUpdated }: OwnerPort
     try {
       await updateAdminSettings(settings);
       setSaveSuccessMsg(true);
+      if (onCourtsUpdated) onCourtsUpdated();
       setTimeout(() => setSaveSuccessMsg(false), 3000);
     } catch (err) {
       alert('Failed to save settings');
@@ -390,6 +391,18 @@ export default function OwnerPortalModal({ onClose, onCourtsUpdated }: OwnerPort
               >
                 <QrCode className="w-4 h-4" />
                 <span>Payment QR & Time Settings</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('content')}
+                className={`pb-3 text-xs font-bold transition border-b-2 flex items-center gap-2 ${
+                  activeTab === 'content'
+                    ? 'border-lime-600 text-lime-800'
+                    : 'border-transparent text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                <Globe className="w-4 h-4 text-lime-600" />
+                <span>Edit Website Text & Content</span>
               </button>
             </div>
 
@@ -940,6 +953,182 @@ export default function OwnerPortalModal({ onClose, onCourtsUpdated }: OwnerPort
                       <p className="text-xs font-mono font-bold text-lime-800">{settings.gcash_number}</p>
                       <p className="text-xs font-bold text-slate-900">{settings.gcash_name}</p>
                     </div>
+                  </div>
+
+                </div>
+
+              </form>
+            )}
+
+            {/* Tab 4: Live Website Text & Content Editor */}
+            {activeTab === 'content' && (
+              <form onSubmit={handleSaveSettings} className="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
+                
+                {saveSuccessMsg && (
+                  <div className="bg-emerald-100 border border-emerald-300 p-3.5 rounded-2xl text-emerald-900 text-xs font-bold flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-700" />
+                    <span>Na-save ug na-update na sa Live Website ang tanang Text ug Content!</span>
+                  </div>
+                )}
+
+                <div className="space-y-5 text-left">
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900 mb-1">Live Website Text & Content Editor:</h3>
+                    <p className="text-xs text-slate-500 font-medium">Bisan unsay imong i-edit ug i-save diri, automatic nga mo-update sa live website alang sa tanang bisita/booker.</p>
+                  </div>
+
+                  {/* Hero Banner Title & Subtitle */}
+                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3 shadow-xs">
+                    <h4 className="text-xs font-black text-slate-900 flex items-center gap-1.5 uppercase tracking-wide">
+                      <Sparkles className="w-4 h-4 text-lime-600" />
+                      <span>Hero Banner Headline & Description</span>
+                    </h4>
+                    <div>
+                      <label className="text-xs font-bold text-slate-800 block mb-1">Hero Title Headline</label>
+                      <input
+                        type="text"
+                        value={settings.hero_title || ''}
+                        onChange={(e) => setSettings({ ...settings, hero_title: e.target.value })}
+                        placeholder="Book Your Pickleball Court in Balamban, Cebu"
+                        className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:outline-none focus:border-lime-600"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-slate-800 block mb-1">Hero Subtitle Description</label>
+                      <textarea
+                        rows={3}
+                        value={settings.hero_subtitle || ''}
+                        onChange={(e) => setSettings({ ...settings, hero_subtitle: e.target.value })}
+                        placeholder="Duwa na og Pickleball sa pinakanindot..."
+                        className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-medium text-slate-900 focus:outline-none focus:border-lime-600"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Contact & Location Info */}
+                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3 shadow-xs">
+                    <h4 className="text-xs font-black text-slate-900 flex items-center gap-1.5 uppercase tracking-wide">
+                      <Phone className="w-4 h-4 text-lime-600" />
+                      <span>Court Contact Numbers, Email & Address</span>
+                    </h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div>
+                        <label className="text-xs font-bold text-slate-800 block mb-1">Hotline / GCash Phone</label>
+                        <input
+                          type="text"
+                          value={settings.contact_phone || ''}
+                          onChange={(e) => setSettings({ ...settings, contact_phone: e.target.value })}
+                          placeholder="0917-888-9900"
+                          className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:outline-none focus:border-lime-600"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold text-slate-800 block mb-1">Landline Phone</label>
+                        <input
+                          type="text"
+                          value={settings.contact_landline || ''}
+                          onChange={(e) => setSettings({ ...settings, contact_landline: e.target.value })}
+                          placeholder="(032) 492-1234"
+                          className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:outline-none focus:border-lime-600"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold text-slate-800 block mb-1">Email Address</label>
+                        <input
+                          type="email"
+                          value={settings.contact_email || ''}
+                          onChange={(e) => setSettings({ ...settings, contact_email: e.target.value })}
+                          placeholder="booking@balambanbest.ph"
+                          className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:outline-none focus:border-lime-600"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-slate-800 block mb-1">Venue Full Address</label>
+                      <input
+                        type="text"
+                        value={settings.location_address || ''}
+                        onChange={(e) => setSettings({ ...settings, location_address: e.target.value })}
+                        placeholder="BALAMBAN EXTENSIVE SKILLS AND TECHNOLOGY, INC..."
+                        className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-medium text-slate-900 focus:outline-none focus:border-lime-600"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Why Play at BEST Inc. Cards */}
+                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3 shadow-xs">
+                    <h4 className="text-xs font-black text-slate-900 flex items-center gap-1.5 uppercase tracking-wide">
+                      <Zap className="w-4 h-4 text-lime-600" />
+                      <span>"Why Play at BEST Inc." Feature Cards (3 Cards)</span>
+                    </h4>
+                    
+                    {/* Feature 1 */}
+                    <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-2">
+                      <p className="text-[11px] font-bold text-lime-800 uppercase">Card 1</p>
+                      <input
+                        type="text"
+                        value={settings.feature_1_title || ''}
+                        onChange={(e) => setSettings({ ...settings, feature_1_title: e.target.value })}
+                        placeholder="Non-Slip Cushion Surface"
+                        className="w-full bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-900"
+                      />
+                      <textarea
+                        rows={2}
+                        value={settings.feature_1_desc || ''}
+                        onChange={(e) => setSettings({ ...settings, feature_1_desc: e.target.value })}
+                        placeholder="Description for Card 1..."
+                        className="w-full bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-900"
+                      />
+                    </div>
+
+                    {/* Feature 2 */}
+                    <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-2">
+                      <p className="text-[11px] font-bold text-lime-800 uppercase">Card 2</p>
+                      <input
+                        type="text"
+                        value={settings.feature_2_title || ''}
+                        onChange={(e) => setSettings({ ...settings, feature_2_title: e.target.value })}
+                        placeholder="Night Lighting & Roof"
+                        className="w-full bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-900"
+                      />
+                      <textarea
+                        rows={2}
+                        value={settings.feature_2_desc || ''}
+                        onChange={(e) => setSettings({ ...settings, feature_2_desc: e.target.value })}
+                        placeholder="Description for Card 2..."
+                        className="w-full bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-900"
+                      />
+                    </div>
+
+                    {/* Feature 3 */}
+                    <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-2">
+                      <p className="text-[11px] font-bold text-lime-800 uppercase">Card 3</p>
+                      <input
+                        type="text"
+                        value={settings.feature_3_title || ''}
+                        onChange={(e) => setSettings({ ...settings, feature_3_title: e.target.value })}
+                        placeholder="Paddle Rental & Coaching"
+                        className="w-full bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-900"
+                      />
+                      <textarea
+                        rows={2}
+                        value={settings.feature_3_desc || ''}
+                        onChange={(e) => setSettings({ ...settings, feature_3_desc: e.target.value })}
+                        placeholder="Description for Card 3..."
+                        className="w-full bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-900"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="pt-2">
+                    <button
+                      type="submit"
+                      disabled={savingSettings}
+                      className="w-full py-3.5 rounded-xl bg-lime-500 hover:bg-lime-600 text-slate-950 font-black text-xs tracking-wider transition shadow-md flex items-center justify-center gap-2"
+                    >
+                      <Save className="w-4 h-4" />
+                      <span>{savingSettings ? 'SAVING...' : 'SAVE WEBSITE TEXT & CONTENT'}</span>
+                    </button>
                   </div>
 
                 </div>

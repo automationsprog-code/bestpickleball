@@ -9,12 +9,13 @@ import OwnerPortalModal from '@/components/OwnerPortalModal';
 import LocationMap from '@/components/LocationMap';
 import MyBookings from '@/components/MyBookings';
 import Footer from '@/components/Footer';
-import { Court, Booking } from '@/lib/types';
-import { getCourts, getAllUserBookings } from '@/lib/supabase';
+import { Court, Booking, AdminSettings } from '@/lib/types';
+import { getCourts, getAllUserBookings, getAdminSettings } from '@/lib/supabase';
 import { Trophy, Zap, Sparkles, ShieldCheck, AlertCircle } from 'lucide-react';
 
 export default function Home() {
   const [courts, setCourts] = useState<Court[]>([]);
+  const [settings, setSettings] = useState<AdminSettings | undefined>(undefined);
   const [activeFilter, setActiveFilter] = useState<string>('All');
   const [selectedCourtForBooking, setSelectedCourtForBooking] = useState<Court | null>(null);
   const [isMyBookingsOpen, setIsMyBookingsOpen] = useState<boolean>(false);
@@ -24,6 +25,9 @@ export default function Home() {
   const loadInitialData = async () => {
     const courtsData = await getCourts();
     setCourts(courtsData);
+
+    const settingsData = await getAdminSettings();
+    setSettings(settingsData);
 
     const bookings = await getAllUserBookings();
     setUserBookingCount(bookings.length);
@@ -70,6 +74,7 @@ export default function Home() {
       <HeroBanner 
         onBookClick={() => scrollToSection('courts')}
         onMapClick={() => scrollToSection('location')}
+        settings={settings}
       />
 
       {/* Courts Selection Section */}
@@ -144,9 +149,11 @@ export default function Home() {
               <div className="w-10 h-10 rounded-2xl bg-lime-100 text-lime-700 flex items-center justify-center font-bold">
                 <Zap className="w-5 h-5" />
               </div>
-              <h3 className="text-lg font-black text-slate-900">Non-Slip Cushion Surface</h3>
+              <h3 className="text-lg font-black text-slate-900">
+                {settings?.feature_1_title || 'Non-Slip Cushion Surface'}
+              </h3>
               <p className="text-slate-600 text-xs leading-relaxed font-medium">
-                Pro-grade acrylic court surfacing system reducing knee strain and ensuring maximum ball bounce accuracy.
+                {settings?.feature_1_desc || 'Pro-grade acrylic court surfacing system reducing knee strain and ensuring maximum ball bounce accuracy.'}
               </p>
             </div>
 
@@ -154,9 +161,11 @@ export default function Home() {
               <div className="w-10 h-10 rounded-2xl bg-lime-100 text-lime-700 flex items-center justify-center font-bold">
                 <Sparkles className="w-5 h-5" />
               </div>
-              <h3 className="text-lg font-black text-slate-900">Night Lighting & Roof</h3>
+              <h3 className="text-lg font-black text-slate-900">
+                {settings?.feature_2_title || 'Night Lighting & Roof'}
+              </h3>
               <p className="text-slate-600 text-xs leading-relaxed font-medium">
-                High-lumen LED floodlights for seamless evening matches up to 10:00 PM regardless of rain or heat.
+                {settings?.feature_2_desc || 'High-lumen LED floodlights for seamless evening matches up to 10:00 PM regardless of rain or heat.'}
               </p>
             </div>
 
@@ -164,9 +173,11 @@ export default function Home() {
               <div className="w-10 h-10 rounded-2xl bg-lime-100 text-lime-700 flex items-center justify-center font-bold">
                 <ShieldCheck className="w-5 h-5" />
               </div>
-              <h3 className="text-lg font-black text-slate-900">Paddle Rental & Coaching</h3>
+              <h3 className="text-lg font-black text-slate-900">
+                {settings?.feature_3_title || 'Paddle Rental & Coaching'}
+              </h3>
               <p className="text-slate-600 text-xs leading-relaxed font-medium">
-                Wala kay paddle? No problem! Naa tay pickleball paddle rentals (₱50/pc) ug certified coaches available.
+                {settings?.feature_3_desc || 'Wala kay paddle? No problem! Naa tay pickleball paddle rentals (₱50/pc) ug certified coaches available.'}
               </p>
             </div>
           </div>
@@ -174,10 +185,10 @@ export default function Home() {
       </section>
 
       {/* Location Map Section */}
-      <LocationMap />
+      <LocationMap settings={settings} />
 
       {/* Footer */}
-      <Footer />
+      <Footer settings={settings} />
 
       {/* Customer Booking Reservation Modal */}
       {selectedCourtForBooking && (

@@ -3,8 +3,18 @@
 import React from 'react';
 import { MapPin, Navigation, Phone, Clock, ExternalLink, Car, Coffee } from 'lucide-react';
 
-export default function LocationMap() {
+import { AdminSettings } from '@/lib/types';
+
+interface LocationMapProps {
+  settings?: AdminSettings;
+}
+
+export default function LocationMap({ settings }: LocationMapProps) {
   const GOOGLE_MAPS_URL = "https://www.google.com/maps/place/BALAMBAN+EXTENSIVE+SKILLS+AND+TECHNOLOGY,+INC./@10.5124198,123.7272847,1193m/data=!3m2!1e3!4b1!4m6!3m5!1s0x33a909a00f7169d7:0xaef1d3f6c0a056e2!8m2!3d10.5124145!4d123.7298596!16s%2Fg%2F11ry0t7wjl?entry=ttu";
+
+  const addressText = settings?.location_address || 'BALAMBAN EXTENSIVE SKILLS AND TECHNOLOGY, INC. (BEST Inc.) Poblacion / Bano, Balamban, Cebu 6041';
+  const phoneText = settings?.contact_phone || '0917-888-9900';
+  const landlineText = settings?.contact_landline || '(032) 492-1234';
 
   return (
     <div id="location" className="py-14 px-4 sm:px-6 lg:px-8 bg-slate-50 border-t border-slate-200">
@@ -40,8 +50,7 @@ export default function LocationMap() {
                   <MapPin className="w-4 h-4 text-lime-600 shrink-0 mt-1" />
                   <div>
                     <strong className="text-slate-900 block">Official Address:</strong>
-                    <p className="text-slate-600">BALAMBAN EXTENSIVE SKILLS AND TECHNOLOGY, INC. (BEST Inc.)</p>
-                    <p className="text-slate-600">Poblacion / Bano, Balamban, Cebu 6041</p>
+                    <p className="text-slate-600">{addressText}</p>
                     <p className="text-[11px] text-lime-700 font-mono font-bold mt-0.5">GPS: 10.5124145, 123.7298596</p>
                   </div>
                 </div>
@@ -58,7 +67,7 @@ export default function LocationMap() {
                   <Phone className="w-4 h-4 text-lime-600 shrink-0" />
                   <div>
                     <strong className="text-slate-900">Court Hotline / GCash:</strong>
-                    <p className="text-slate-600">0917-888-9900 / (032) 492-1234</p>
+                    <p className="text-slate-600">{phoneText} / {landlineText}</p>
                   </div>
                 </div>
               </div>
