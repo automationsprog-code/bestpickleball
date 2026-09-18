@@ -59,7 +59,7 @@ export default function BookingModal({ court, onClose, onBookingSuccess }: Booki
       try {
         const bookings = await getBookingsForDate(selectedDate);
         const slotsForThisCourt = bookings
-          .filter(b => b.court_id === court?.id || (b.court_name && court?.name && b.court_name === court?.name))
+          .filter(b => !b.court_id || b.court_id === court?.id || (b.court_name && court?.name && b.court_name === court?.name))
           .flatMap(b => {
             const list: string[] = [];
             if (b.start_time) {
@@ -113,33 +113,47 @@ export default function BookingModal({ court, onClose, onBookingSuccess }: Booki
 
     setSubmitting(true);
 
-    const rentals: EquipmentRental[] = [];
-    if (paddleQty > 0) rentals.push({ id: 'pad', name: 'Pickleball Paddle', price: 50, quantity: paddleQty });
-    if (ballQty > 0) rentals.push({ id: 'ball', name: 'Franklin X-40 Balls', price: 30, quantity: ballQty });
-    if (coachAdded) rentals.push({ id: 'coach', name: 'Personal Coach', price: 300, quantity: 1 });
-
-    const refNo = `BEST-PKL-${Math.floor(1000 + Math.random() * 9000)}`;
-
-    const newBookingData: Omit<Booking, 'id' | 'created_at'> = {
-      reference_no: refNo,
-      court_id: court.id,
-      court_name: court.name,
-      customer_name: customerName,
-      customer_email: customerEmail || 'customer@balamban.ph',
-      customer_phone: customerPhone,
-      booking_date: selectedDate,
-      time_slot_label: selectedSlot.label,
-      start_time: selectedSlot.startTime,
-      end_time: selectedSlot.endTime,
-      total_amount: totalPrice,
-      equipment_rentals: rentals,
-      payment_method: paymentMethod,
-      payment_status: 'Paid',
-      status: 'Confirmed',
-      notes
-    };
-
     try {
+      // Double booking safety check: re-verify if slot is already booked in DB
+      const freshBookings = await getBookingsForDate(selectedDate);
+      const isSlotAlreadyTaken = freshBookings.some(b => {
+        const isSameCourt = !b.court_id || b.court_id === court.id || (b.court_name && b.court_name === court.name);
+        const isSameSlot = (b.start_time && b.start_time.substring(0, 5) === selectedSlot.startTime) || b.time_slot_label === selectedSlot.label;
+        return isSameCourt && isSameSlot;
+      });
+
+      if (isSlotAlreadyTaken) {
+        alert(`Dili na pwede i-book kining orasa! Naa na'y nag-book sa ${selectedSlot.label}. Palihug sa pagpili og laing oras.`);
+        setBookedSlots(prev => Array.from(new Set([...prev, selectedSlot.startTime, selectedSlot.label])));
+        return;
+      }
+
+      const rentals: EquipmentRental[] = [];
+      if (paddleQty > 0) rentals.push({ id: 'pad', name: 'Pickleball Paddle', price: 50, quantity: paddleQty });
+      if (ballQty > 0) rentals.push({ id: 'ball', name: 'Franklin X-40 Balls', price: 30, quantity: ballQty });
+      if (coachAdded) rentals.push({ id: 'coach', name: 'Personal Coach', price: 300, quantity: 1 });
+
+      const refNo = `BEST-PKL-${Math.floor(1000 + Math.random() * 9000)}`;
+
+      const newBookingData: Omit<Booking, 'id' | 'created_at'> = {
+        reference_no: refNo,
+        court_id: court.id,
+        court_name: court.name,
+        customer_name: customerName,
+        customer_email: customerEmail || 'customer@balamban.ph',
+        customer_phone: customerPhone,
+        booking_date: selectedDate,
+        time_slot_label: selectedSlot.label,
+        start_time: selectedSlot.startTime,
+        end_time: selectedSlot.endTime,
+        total_amount: totalPrice,
+        equipment_rentals: rentals,
+        payment_method: paymentMethod,
+        payment_status: 'Paid',
+        status: 'Confirmed',
+        notes
+      };
+
       const created = await createBooking(newBookingData);
       setConfirmedBooking(created);
       onBookingSuccess(created);

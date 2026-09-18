@@ -279,9 +279,10 @@ function fromDbBooking(dbItem: any): Booking {
 
   return {
     ...dbItem,
+    court_id: dbItem.court_id || '11111111-1111-1111-1111-111111111111',
+    court_name: dbItem.court_name || 'Court 1',
     start_time: startTime,
     end_time: endTime,
-    court_name: dbItem.court_name || 'Court 1',
     time_slot_label: dbItem.time_slot_label || `${format12(startTime)} - ${format12(endTime)}`,
     payment_status: dbItem.payment_status || 'Paid',
   };
