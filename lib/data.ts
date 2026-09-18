@@ -76,7 +76,7 @@ export const INITIAL_COURTS: Court[] = [
     hourly_rate: 350,
     description: 'Premier covered pickleball court equipped with high-performance LED lighting and official tournament court dimensions.',
     features: ['Covered Roof Structure', 'High-Lumen LED Night Lights', 'Official Net System', 'Spectator Seating Lounge'],
-    image_url: 'https://images.unsplash.com/photo-1626248801379-51a0748a5f96?auto=format&fit=crop&w=1200&q=80',
+    image_url: 'https://images.unsplash.com/photo-1599586120429-48281b6f0eca?auto=format&fit=crop&w=1200&q=80',
     is_active: true
   }
 ];

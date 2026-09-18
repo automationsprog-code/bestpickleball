@@ -86,7 +86,7 @@ VALUES
     350.00,
     'Premier covered pickleball court equipped with high-performance LED lighting and official tournament court dimensions.',
     ARRAY['Covered Roof', 'LED Night Lighting', 'Official Net System', 'Spectator Seating'],
-    'https://images.unsplash.com/photo-1626248801379-51a0748a5f96?auto=format&fit=crop&w=1200&q=80'
+    'https://images.unsplash.com/photo-1599586120429-48281b6f0eca?auto=format&fit=crop&w=1200&q=80'
   )
 ON CONFLICT (id) DO NOTHING;
 
