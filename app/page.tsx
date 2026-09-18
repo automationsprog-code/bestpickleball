@@ -14,6 +14,8 @@ import { Court, Booking, AdminSettings } from '@/lib/types';
 import { getCourts, getAllUserBookings, getAdminSettings } from '@/lib/supabase';
 import { Trophy, Zap, Sparkles, ShieldCheck, AlertCircle } from 'lucide-react';
 
+import { INITIAL_COURTS } from '@/lib/data';
+
 export default function Home() {
   const [courts, setCourts] = useState<Court[]>([]);
   const [settings, setSettings] = useState<AdminSettings | undefined>(undefined);
@@ -49,14 +51,15 @@ export default function Home() {
     }
   };
 
-  // Filter ONLY ACTIVE COURTS for bookers/customers!
-  const activeCourtsForBookers = courts.filter(court => court.is_active !== false);
+  // Robust active court pool for mobile & desktop bookers
+  const activeCourtsForBookers = courts.filter(court => court.is_active !== false && (court.is_active as any) !== 'false');
+  const courtsPool = activeCourtsForBookers.length > 0 ? activeCourtsForBookers : (courts.length > 0 ? courts : INITIAL_COURTS);
 
-  const filteredCourts = activeCourtsForBookers.filter(court => {
+  const filteredCourts = courtsPool.filter(court => {
     if (activeFilter === 'All') return true;
-    if (activeFilter === 'Indoor') return court.type === 'Indoor Covered';
-    if (activeFilter === 'Outdoor') return court.type === 'Outdoor Pro';
-    if (activeFilter === 'VIP') return court.type === 'VIP Covered';
+    if (activeFilter === 'Indoor') return court.type?.toLowerCase().includes('indoor') || court.type?.toLowerCase().includes('covered');
+    if (activeFilter === 'Outdoor') return court.type?.toLowerCase().includes('outdoor') || court.type?.toLowerCase().includes('pro');
+    if (activeFilter === 'VIP') return court.type?.toLowerCase().includes('vip');
     return true;
   });
 
