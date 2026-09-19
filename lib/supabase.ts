@@ -486,12 +486,18 @@ export async function getAdminSettings(): Promise<AdminSettings> {
     }
   }
 
-  // Merge order: DEFAULT_ADMIN_SETTINGS < dbSettings < localSettings
-  // Local settings take final precedence so active/inactive toggles are NEVER erased on refresh
-  const merged: AdminSettings = {
+  // Base merge: DEFAULT_ADMIN_SETTINGS merged with localSettings
+  const baseSettings: AdminSettings = {
     ...DEFAULT_ADMIN_SETTINGS,
-    ...dbSettings,
     ...localSettings
+  };
+
+  // Supabase Cloud DB settings (dbSettings) take ultimate precedence across ALL devices!
+  // This guarantees that whatever Admin updates in Supabase (e.g. contact_email: sample@gmail.com)
+  // is 100% synchronized to ALL devices (Mobile, Desktop, Tablet, Incognito) without local device cache overrides!
+  const merged: AdminSettings = {
+    ...baseSettings,
+    ...dbSettings
   };
 
   return merged;

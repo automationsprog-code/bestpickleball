@@ -3,7 +3,7 @@
  * to courts, bookings, or settings data so that ALL devices (incognito, mobile,
  * other browsers) immediately discard their stale localStorage on next load.
  */
-export const APP_DATA_VERSION = 'v2026-09-19-04';
+export const APP_DATA_VERSION = 'v2026-09-19-05';
 
 const VERSION_KEY = 'balamban_app_data_version';
 
@@ -12,6 +12,7 @@ const CACHE_KEYS = [
   'balamban_custom_created_courts',
   'balamban_pickleball_bookings',
   'balamban_deleted_court_ids',
+  'balamban_pickleball_admin_settings',
 ];
 
 /**
