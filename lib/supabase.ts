@@ -162,14 +162,10 @@ export async function createCourt(newCourtData: Omit<Court, 'id'>): Promise<Cour
   // 1. Save locally first so newly created court NEVER disappears
   saveCustomCreatedCourt(court);
 
-  // 2. Try inserting into Supabase (strip base64 image — too large for DB)
+  // 2. Try inserting into Supabase
   if (supabase) {
     try {
-      const isBase64 = typeof court.image_url === 'string' && court.image_url.startsWith('data:');
-      const payload = isBase64
-        ? { ...court, image_url: 'https://images.unsplash.com/photo-1599586120429-48281b6f0eca?auto=format&fit=crop&w=1200&q=80' }
-        : court;
-      const { error } = await supabase.from('courts').insert([payload]).select().single();
+      const { error } = await supabase.from('courts').insert([court]).select().single();
       if (error) {
         console.warn('Supabase insert court warning (court saved locally):', error);
       }
@@ -184,17 +180,10 @@ export async function createCourt(newCourtData: Omit<Court, 'id'>): Promise<Cour
 export async function updateCourtDetails(id: string, updates: Partial<Court>): Promise<boolean> {
   let success = false;
 
-  // Strip base64 image from Supabase payload — base64 blobs are too large and
-  // cause duplicate court rows. Only plain HTTPS URLs are stored remotely.
-  const isBase64Image = typeof updates.image_url === 'string' && updates.image_url.startsWith('data:');
-  const supabaseUpdates: Partial<Court> = isBase64Image
-    ? { ...updates, image_url: undefined }
-    : updates;
-
-  // 1. Update Supabase Cloud DB first (without base64 image)
+  // 1. Update Supabase Cloud DB first (including court image)
   if (supabase) {
     try {
-      const { error } = await supabase.from('courts').update(supabaseUpdates).eq('id', id);
+      const { error } = await supabase.from('courts').update(updates).eq('id', id);
       if (!error) success = true;
       else console.warn('Supabase update court warning:', error);
     } catch (err) {

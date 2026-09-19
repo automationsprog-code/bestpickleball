@@ -135,31 +135,66 @@ export default function OwnerPortalModal({ onClose, onCourtsUpdated }: OwnerPort
     setEditImageUrl(court.image_url || '');
   };
 
+  // Compress uploaded images via HTML5 Canvas to lightweight ~80-120KB JPEGs
+  const compressImageFile = (file: File, maxWidth = 1000, quality = 0.75): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            resolve(event.target?.result as string);
+            return;
+          }
+
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+          resolve(compressedDataUrl);
+        };
+        img.onerror = () => resolve(event.target?.result as string);
+        img.src = event.target?.result as string;
+      };
+      reader.onerror = (err) => reject(err);
+      reader.readAsDataURL(file);
+    });
+  };
+
   // Handle Uploading Court Image File
-  const handleCourtImageFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCourtImageFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        if (typeof reader.result === 'string') {
-          setEditImageUrl(reader.result);
-        }
-      };
-      reader.readAsDataURL(file);
+      try {
+        const compressed = await compressImageFile(file);
+        setEditImageUrl(compressed);
+      } catch (err) {
+        console.error('Failed to compress court image:', err);
+      }
     }
   };
 
   // Handle Uploading New Court Image File
-  const handleNewCourtImageFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleNewCourtImageFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        if (typeof reader.result === 'string') {
-          setNewCourtImageUrl(reader.result);
-        }
-      };
-      reader.readAsDataURL(file);
+      try {
+        const compressed = await compressImageFile(file);
+        setNewCourtImageUrl(compressed);
+      } catch (err) {
+        console.error('Failed to compress court image:', err);
+      }
     }
   };
 
