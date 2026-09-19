@@ -74,20 +74,25 @@ export default function ChatSupport({ settings }: ChatSupportProps) {
       const lower = text.toLowerCase();
       let botText = '';
 
-      if (lower.includes('book') || lower.includes('unsaon') || lower.includes('reserve')) {
-        botText = 'Aron magpa-book og Pickleball Court, i-click ra ang "BOOK A COURT NOW" button sa taas, pilia ang court, petsa, ug orasan (6 AM - 10 PM). Instant lock ang slots!';
-      } else if (lower.includes('pay') || lower.includes('payment') || lower.includes('landbank') || lower.includes('gcash') || lower.includes('maya')) {
-        const lb = settings?.landbank_number || '1234-5678-9012';
-        const gc = settings?.contact_phone || '0917-888-9900';
-        botText = `Modawat kami ug Scan-to-Pay sa Landbank (Acct: ${lb}), GCash (${gc}), ug Maya QR. Naa kay Scan-to-Pay QR code sa confirmation screen!`;
-      } else if (lower.includes('hour') || lower.includes('oras') || lower.includes('time') || lower.includes('location') || lower.includes('asan')) {
+      if (lower.includes('pay') || lower.includes('payment') || lower.includes('landbank') || lower.includes('gcash') || lower.includes('maya') || lower.includes('bayad') || lower.includes('qr')) {
+        botText = `Modawat kami ug Instant Scan-to-Pay pinaagi sa Landbank QR, GCash QR, ug Maya QR code. Pagkahuman nimo pagpili og court ug oras sa "Book Court", ma-pakita dayon ang official Payment QR code sa confirmation screen!`;
+      } else if (lower.includes('book') || lower.includes('reserve') || lower.includes('slot') || lower.includes('unsaon')) {
+        botText = 'Aron magpa-book og Pickleball Court, i-click ra ang "BOOK COURT" button sa taas, pilia ang court, petsa, ug oras (6 AM - 10 PM). Instant lock ang imong slot!';
+      } else if (lower.includes('hour') || lower.includes('oras') || lower.includes('time') || lower.includes('open') || lower.includes('schedule')) {
+        const openH = settings?.opening_hour || 6;
+        const closeH = settings?.closing_hour || 22;
+        botText = `Abli kami kada adlaw (Monday - Sunday) gikan ${openH}:00 AM hangtod ${closeH > 12 ? closeH - 12 : closeH}:00 PM sa BEST Inc. Balamban.`;
+      } else if (lower.includes('location') || lower.includes('asan') || lower.includes('asa') || lower.includes('map') || lower.includes('address') || lower.includes('dapit')) {
         const addr = settings?.location_address || 'Poblacion / Bano, Balamban, Cebu';
-        botText = `Abli kami kada adlaw (Monday - Sunday) gikan 6:00 AM hangtod 10:00 PM sa ${addr}. GPS: 10.5124145, 123.7298596.`;
-      } else if (lower.includes('admin') || lower.includes('hotline') || lower.includes('contact') || lower.includes('tawag')) {
-        const phone = settings?.contact_phone || '0917-888-9900';
+        botText = `Kaming nahimutang sa ${addr} (BEST Inc. Campus). Naa pud tay Interactive Map sa ubos sa website para sa GPS directions.`;
+      } else if (lower.includes('rate') || lower.includes('pila') || lower.includes('price') || lower.includes('paddle') || lower.includes('ball') || lower.includes('rent')) {
+        botText = `Ang atong Court Rate naggikan sa ₱150 - ₱200/hr. Naa sad tay Paddle Rental (₱50/pc), Ball pack (₱30/pack), ug Personal Coach (₱300/hr).`;
+      } else if (lower.includes('admin') || lower.includes('hotline') || lower.includes('contact') || lower.includes('tawag') || lower.includes('phone') || lower.includes('number')) {
+        const phone = settings?.contact_phone || '09458819427';
         botText = `Pwede ka mo-tawag o mo-text sa among Court Admin Hotline sa ${phone} o mag-email sa ${settings?.contact_email || 'booking@balambanbest.ph'}.`;
       } else {
-        botText = `Salamat sa imong mensahe! Nakuha na sa among Court Admin sa BEST Inc. Balamban ang imong inquiry. Pwede usab ka mo-contact sa Hotline: ${settings?.contact_phone || '0917-888-9900'}.`;
+        const phone = settings?.contact_phone || '09458819427';
+        botText = `Salamat sa imong mensahe! Nakuha na sa among Court Admin sa BEST Inc. Balamban ang imong inquiry. Pwede usab ka mo-contact sa Hotline: ${phone}.`;
       }
 
       const botReply: ChatMessage = {

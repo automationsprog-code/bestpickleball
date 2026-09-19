@@ -70,7 +70,9 @@ export default function Home() {
   const scrollToSection = (id: string) => {
     const el = document.getElementById(id);
     if (el) {
-      el.scrollIntoView({ behavior: 'smooth' });
+      const yOffset = -70;
+      const y = el.getBoundingClientRect().top + window.pageYOffset + yOffset;
+      window.scrollTo({ top: y, behavior: 'smooth' });
     }
   };
 
@@ -87,7 +89,7 @@ export default function Home() {
   });
 
   return (
-    <div className="bg-white min-h-screen text-slate-900 flex flex-col font-sans selection:bg-lime-500 selection:text-slate-950 relative overflow-x-hidden">
+    <div className="bg-white min-h-screen text-slate-900 flex flex-col font-sans selection:bg-lime-500 selection:text-slate-950 relative overflow-x-hidden pt-16">
       
       {/* Animated Pickleball Paddle & Bouncing Ball Splash Loading Screen */}
       <LoadingScreen />

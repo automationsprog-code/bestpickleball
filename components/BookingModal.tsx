@@ -248,16 +248,6 @@ export default function BookingModal({ court, onClose, onBookingSuccess }: Booki
               </div>
 
               <div>
-                <p className="text-xs font-mono font-bold text-lime-700">
-                  {confirmedBooking.payment_method === 'Maya' ? adminSettings.maya_number :
-                   confirmedBooking.payment_method === 'Landbank' ? adminSettings.landbank_number :
-                   adminSettings.gcash_number}
-                </p>
-                <p className="text-xs font-bold text-slate-900">
-                  {confirmedBooking.payment_method === 'Maya' ? adminSettings.maya_name :
-                   confirmedBooking.payment_method === 'Landbank' ? adminSettings.landbank_name :
-                   adminSettings.gcash_name}
-                </p>
                 <p className="text-[11px] text-slate-600 mt-1 font-medium">Palihug i-send ang <strong>₱{confirmedBooking.total_amount}</strong> ug i-pakita ang Ref No. inig abot sa venue.</p>
               </div>
             </div>

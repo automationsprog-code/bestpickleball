@@ -19,7 +19,7 @@ export default function Navbar({ onOpenMyBookings, onOpenOwnerPortal, onScrollTo
   };
 
   return (
-    <nav className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 transition-all shadow-sm">
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200 transition-all shadow-sm">
       <div className="max-w-[1700px] mx-auto px-4 sm:px-8 lg:px-12">
         <div className="flex items-center justify-between h-16">
           
@@ -73,7 +73,7 @@ export default function Navbar({ onOpenMyBookings, onOpenOwnerPortal, onScrollTo
             <button
               onClick={onOpenOwnerPortal}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-800 text-xs font-bold transition shadow-xs"
-              title="Court Owner Dashboard (Username: bestadmin)"
+              title="Court Owner Dashboard"
             >
               <Lock className="w-3.5 h-3.5 text-lime-600" />
               <span className="hidden sm:inline">Owner Portal</span>
