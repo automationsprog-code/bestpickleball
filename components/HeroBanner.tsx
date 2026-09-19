@@ -23,12 +23,12 @@ export default function HeroBanner({ onBookClick, onMapClick, settings }: HeroBa
       {/* Decorative Glow background */}
       <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[250px] bg-lime-400/20 blur-[100px] rounded-full pointer-events-none"></div>
 
-      {/* Soft Scrolling Background Watermark Logo */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none opacity-[0.05] overflow-hidden select-none">
+      {/* Centered Background Watermark Logo in Hero Screen */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none opacity-[0.08] overflow-hidden select-none">
         <img 
           src="/logo.jpg" 
           alt="Balamban BEST Inc. Watermark" 
-          className="w-[450px] sm:w-[600px] h-[450px] sm:h-[600px] object-contain rounded-full mix-blend-multiply filter contrast-125"
+          className="w-[450px] sm:w-[620px] h-[450px] sm:h-[620px] object-contain rounded-full mix-blend-multiply filter contrast-125"
         />
       </div>
 

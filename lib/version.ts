@@ -3,7 +3,7 @@
  * to courts, bookings, or settings data so that ALL devices (incognito, mobile,
  * other browsers) immediately discard their stale localStorage on next load.
  */
-export const APP_DATA_VERSION = 'v2026-09-19-03';
+export const APP_DATA_VERSION = 'v2026-09-19-04';
 
 const VERSION_KEY = 'balamban_app_data_version';
 

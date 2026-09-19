@@ -221,10 +221,24 @@ export async function deleteCourt(id: string): Promise<boolean> {
   markCourtAsDeletedLocally(id);
   removeCustomCreatedCourt(id);
 
-  // 2. Perform deletion in Supabase DB if connected (first clear FK references in bookings)
+  // 2. Remove all local bookings associated with this deleted court
+  if (typeof window !== 'undefined') {
+    try {
+      const local = localStorage.getItem('balamban_pickleball_bookings');
+      if (local) {
+        const existing: Booking[] = JSON.parse(local);
+        const filtered = existing.filter(b => b.court_id !== id);
+        localStorage.setItem('balamban_pickleball_bookings', JSON.stringify(filtered));
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  // 3. Perform deletion in Supabase DB if connected (delete associated bookings first, then court)
   if (supabase) {
     try {
-      await supabase.from('bookings').update({ court_id: null }).eq('court_id', id);
+      await supabase.from('bookings').delete().eq('court_id', id);
       const { error } = await supabase.from('courts').delete().eq('id', id);
       if (error) {
         console.warn('Supabase delete error (court remains deleted locally):', error);
@@ -331,6 +345,22 @@ export async function createBooking(newBooking: Omit<Booking, 'id' | 'created_at
 }
 
 export async function getAllUserBookings(): Promise<Booking[]> {
+  const courts = await getCourts();
+  // Filter for courts that are active (is_active !== false)
+  const activeCourtIds = new Set(
+    courts.filter(c => c.is_active !== false && (c.is_active as any) !== 'false').map(c => c.id)
+  );
+  const activeCourtNames = new Set(
+    courts.filter(c => c.is_active !== false && (c.is_active as any) !== 'false').map(c => c.name.toLowerCase().trim())
+  );
+
+  const isBookingForActiveCourt = (b: Booking) => {
+    if (!b.court_id && !b.court_name) return false;
+    if (b.court_id && activeCourtIds.has(b.court_id)) return true;
+    if (b.court_name && activeCourtNames.has(b.court_name.toLowerCase().trim())) return true;
+    return false;
+  };
+
   let remoteBookings: Booking[] = [];
   let isRemoteConnected = false;
 
@@ -338,7 +368,7 @@ export async function getAllUserBookings(): Promise<Booking[]> {
     try {
       const { data, error } = await supabase.from('bookings').select('*').order('created_at', { ascending: false });
       if (!error && data) {
-        remoteBookings = data.map(fromDbBooking);
+        remoteBookings = data.map(fromDbBooking).filter(isBookingForActiveCourt);
         isRemoteConnected = true;
       }
     } catch (err) {
@@ -360,14 +390,14 @@ export async function getAllUserBookings(): Promise<Booking[]> {
     const local = localStorage.getItem('balamban_pickleball_bookings');
     if (local) {
       try {
-        localBookings = JSON.parse(local);
+        localBookings = JSON.parse(local).filter(isBookingForActiveCourt);
       } catch (e) {
         console.error(e);
       }
     }
   }
 
-  return localBookings.length > 0 ? localBookings : INITIAL_BOOKINGS;
+  return localBookings;
 }
 
 export async function getBookingsForDate(date: string): Promise<Booking[]> {
