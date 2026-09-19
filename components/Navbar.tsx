@@ -25,10 +25,8 @@ export default function Navbar({ onOpenMyBookings, onOpenOwnerPortal, onScrollTo
           
           {/* Brand Logo & Location */}
           <div className="flex items-center space-x-3 cursor-pointer" onClick={() => handleNavClick('hero')}>
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-lime-600 to-emerald-500 p-0.5 shadow-md shadow-lime-500/20">
-              <div className="w-full h-full bg-slate-900 rounded-[10px] flex items-center justify-center">
-                <Trophy className="w-5 h-5 text-lime-400" />
-              </div>
+            <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-lime-600 to-emerald-500 p-0.5 shadow-md shadow-lime-500/20 flex-shrink-0">
+              <img src="/logo.jpg" alt="Balamban BEST Inc. Logo" className="w-full h-full object-cover rounded-full" />
             </div>
             <div>
               <div className="flex items-center gap-2">

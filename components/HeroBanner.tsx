@@ -23,12 +23,21 @@ export default function HeroBanner({ onBookClick, onMapClick, settings }: HeroBa
       {/* Decorative Glow background */}
       <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[250px] bg-lime-400/20 blur-[100px] rounded-full pointer-events-none"></div>
 
+      {/* Official BALAMBAN EXTENSIVE SKILLS AND TECHNOLOGY, INC. Background Watermark Logo */}
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.12] overflow-hidden select-none">
+        <img 
+          src="/logo.jpg" 
+          alt="Balamban BEST Inc. Logo Background" 
+          className="w-[480px] sm:w-[680px] h-[480px] sm:h-[680px] object-contain rounded-full transform hover:scale-105 transition-transform duration-700 filter drop-shadow-2xl"
+        />
+      </div>
+
       <div className="max-w-7xl mx-auto">
         <div className="text-center space-y-6 max-w-3xl mx-auto relative z-10">
           
-          {/* Location Badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white border border-lime-500/40 text-lime-800 text-xs font-bold shadow-sm">
-            <MapPin className="w-3.5 h-3.5 text-lime-600" />
+          {/* Location & Brand Badge with Official Logo */}
+          <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-white/95 backdrop-blur-md border border-lime-500/40 text-lime-900 text-xs font-bold shadow-sm">
+            <img src="/logo.jpg" alt="BEST Inc. Logo" className="w-5 h-5 rounded-full object-cover border border-lime-500 shadow-xs" />
             <span>Balamban Extensive Skills and Technology, Inc. (BEST Inc.)</span>
           </div>
 

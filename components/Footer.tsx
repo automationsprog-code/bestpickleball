@@ -19,8 +19,8 @@ export default function Footer({ settings }: FooterProps) {
         
         {/* Brand Info */}
         <div className="space-y-3 md:col-span-2">
-          <div className="flex items-center space-x-2">
-            <Trophy className="w-5 h-5 text-lime-600" />
+          <div className="flex items-center space-x-2.5">
+            <img src="/logo.jpg" alt="BEST Inc. Logo" className="w-6 h-6 rounded-full object-cover border border-lime-500 shadow-xs" />
             <span className="font-black text-base text-slate-900">BEST PICKLEBALL BALAMBAN</span>
           </div>
           <p className="text-slate-600 leading-relaxed max-w-md font-medium">
