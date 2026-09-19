@@ -61,10 +61,36 @@ export interface AdminSettings {
 
   feature_1_title?: string;
   feature_1_desc?: string;
+  feature_1_active?: boolean;
+
   feature_2_title?: string;
   feature_2_desc?: string;
+  feature_2_active?: boolean;
+
   feature_3_title?: string;
   feature_3_desc?: string;
+  feature_3_active?: boolean;
+
+  // Hero Quick Feature Pills (4 Pills)
+  pill_1_title?: string;
+  pill_1_sub?: string;
+  pill_1_active?: boolean;
+
+  pill_2_title?: string;
+  pill_2_sub?: string;
+  pill_2_active?: boolean;
+
+  pill_3_title?: string;
+  pill_3_sub?: string;
+  pill_3_active?: boolean;
+
+  pill_4_title?: string;
+  pill_4_sub?: string;
+  pill_4_active?: boolean;
+
+  why_play_title?: string;
+  why_play_subtitle?: string;
+  why_play_active?: boolean;
 }
 
 export interface ChatMessage {

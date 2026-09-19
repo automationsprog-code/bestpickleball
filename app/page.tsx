@@ -164,55 +164,65 @@ export default function Home() {
 
       </section>
 
-      {/* Rates & Amenities Section */}
-      <section id="rates" className="py-12 px-4 sm:px-8 lg:px-12 bg-slate-50 border-y border-slate-200">
-        <div className="max-w-[1700px] mx-auto space-y-8">
-          <div className="text-center space-y-2 max-w-2xl mx-auto">
-            <h2 className="text-2xl sm:text-3xl font-black text-slate-900">Why Play at BEST Inc. Balamban?</h2>
-            <p className="text-slate-600 text-xs sm:text-sm font-medium">
-              Gidisenyo alang sa beginners, enthusiasts, ug tournament players sa Balamban ug silingang lungsod.
-            </p>
+      {/* Rates & Amenities Section (Dynamic & Toggleable by Admin) */}
+      {settings?.why_play_active !== false && (
+        <section id="rates" className="py-12 px-4 sm:px-8 lg:px-12 bg-slate-50 border-y border-slate-200">
+          <div className="max-w-[1700px] mx-auto space-y-8">
+            <div className="text-center space-y-2 max-w-2xl mx-auto">
+              <h2 className="text-2xl sm:text-3xl font-black text-slate-900">
+                {settings?.why_play_title || 'Why Play at BEST Inc. Balamban?'}
+              </h2>
+              <p className="text-slate-600 text-xs sm:text-sm font-medium">
+                {settings?.why_play_subtitle || 'Gidisenyo alang sa beginners, enthusiasts, ug tournament players sa Balamban ug silingang lungsod.'}
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+              {settings?.feature_1_active !== false && (
+                <div className="bg-white p-6 rounded-3xl border border-slate-200 space-y-3 shadow-xs">
+                  <div className="w-10 h-10 rounded-2xl bg-lime-100 text-lime-700 flex items-center justify-center font-bold">
+                    <Zap className="w-5 h-5" />
+                  </div>
+                  <h3 className="text-lg font-black text-slate-900">
+                    {settings?.feature_1_title || 'Non-Slip Cushion Surface'}
+                  </h3>
+                  <p className="text-slate-600 text-xs leading-relaxed font-medium">
+                    {settings?.feature_1_desc || 'Pro-grade acrylic court surfacing system reducing knee strain and ensuring maximum ball bounce accuracy.'}
+                  </p>
+                </div>
+              )}
+
+              {settings?.feature_2_active !== false && (
+                <div className="bg-white p-6 rounded-3xl border border-slate-200 space-y-3 shadow-xs">
+                  <div className="w-10 h-10 rounded-2xl bg-lime-100 text-lime-700 flex items-center justify-center font-bold">
+                    <Sparkles className="w-5 h-5" />
+                  </div>
+                  <h3 className="text-lg font-black text-slate-900">
+                    {settings?.feature_2_title || 'Night Lighting & Roof'}
+                  </h3>
+                  <p className="text-slate-600 text-xs leading-relaxed font-medium">
+                    {settings?.feature_2_desc || 'High-lumen LED floodlights for seamless evening matches up to 10:00 PM regardless of rain or heat.'}
+                  </p>
+                </div>
+              )}
+
+              {settings?.feature_3_active !== false && (
+                <div className="bg-white p-6 rounded-3xl border border-slate-200 space-y-3 shadow-xs">
+                  <div className="w-10 h-10 rounded-2xl bg-lime-100 text-lime-700 flex items-center justify-center font-bold">
+                    <ShieldCheck className="w-5 h-5" />
+                  </div>
+                  <h3 className="text-lg font-black text-slate-900">
+                    {settings?.feature_3_title || 'Paddle Rental & Coaching'}
+                  </h3>
+                  <p className="text-slate-600 text-xs leading-relaxed font-medium">
+                    {settings?.feature_3_desc || 'Wala kay paddle? No problem! Naa tay pickleball paddle rentals (₱50/pc) ug certified coaches available.'}
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-            <div className="bg-white p-6 rounded-3xl border border-slate-200 space-y-3 shadow-xs">
-              <div className="w-10 h-10 rounded-2xl bg-lime-100 text-lime-700 flex items-center justify-center font-bold">
-                <Zap className="w-5 h-5" />
-              </div>
-              <h3 className="text-lg font-black text-slate-900">
-                {settings?.feature_1_title || 'Non-Slip Cushion Surface'}
-              </h3>
-              <p className="text-slate-600 text-xs leading-relaxed font-medium">
-                {settings?.feature_1_desc || 'Pro-grade acrylic court surfacing system reducing knee strain and ensuring maximum ball bounce accuracy.'}
-              </p>
-            </div>
-
-            <div className="bg-white p-6 rounded-3xl border border-slate-200 space-y-3 shadow-xs">
-              <div className="w-10 h-10 rounded-2xl bg-lime-100 text-lime-700 flex items-center justify-center font-bold">
-                <Sparkles className="w-5 h-5" />
-              </div>
-              <h3 className="text-lg font-black text-slate-900">
-                {settings?.feature_2_title || 'Night Lighting & Roof'}
-              </h3>
-              <p className="text-slate-600 text-xs leading-relaxed font-medium">
-                {settings?.feature_2_desc || 'High-lumen LED floodlights for seamless evening matches up to 10:00 PM regardless of rain or heat.'}
-              </p>
-            </div>
-
-            <div className="bg-white p-6 rounded-3xl border border-slate-200 space-y-3 shadow-xs">
-              <div className="w-10 h-10 rounded-2xl bg-lime-100 text-lime-700 flex items-center justify-center font-bold">
-                <ShieldCheck className="w-5 h-5" />
-              </div>
-              <h3 className="text-lg font-black text-slate-900">
-                {settings?.feature_3_title || 'Paddle Rental & Coaching'}
-              </h3>
-              <p className="text-slate-600 text-xs leading-relaxed font-medium">
-                {settings?.feature_3_desc || 'Wala kay paddle? No problem! Naa tay pickleball paddle rentals (₱50/pc) ug certified coaches available.'}
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Location Map Section */}
       <LocationMap settings={settings} />

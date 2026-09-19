@@ -1180,16 +1180,195 @@ export default function OwnerPortalModal({ onClose, onCourtsUpdated }: OwnerPort
                     </div>
                   </div>
 
-                  {/* Why Play at BEST Inc. Cards */}
+                  {/* Hero Quick Feature Pills Controls (4 Pills) */}
                   <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3 shadow-xs">
-                    <h4 className="text-xs font-black text-slate-900 flex items-center gap-1.5 uppercase tracking-wide">
-                      <Zap className="w-4 h-4 text-lime-600" />
-                      <span>"Why Play at BEST Inc." Feature Cards (3 Cards)</span>
+                    <h4 className="text-xs font-black text-slate-900 flex items-center justify-between uppercase tracking-wide">
+                      <div className="flex items-center gap-1.5">
+                        <Trophy className="w-4 h-4 text-lime-600" />
+                        <span>Hero Quick Feature Pills (4 Badges)</span>
+                      </div>
                     </h4>
+                    <p className="text-[11px] text-slate-500 font-medium">Maka-edit ka sa title/sub o maka-Active/Inactive sa matag feature pill sa Hero banner.</p>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {/* Pill 1 */}
+                      <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] font-bold text-lime-800 uppercase">Pill 1</span>
+                          <button
+                            type="button"
+                            onClick={() => setSettings({ ...settings, pill_1_active: settings.pill_1_active === false })}
+                            className={`px-2.5 py-0.5 rounded-full text-[10px] font-black transition-all flex items-center gap-1 ${
+                              settings.pill_1_active !== false ? 'bg-lime-100 text-lime-800 border border-lime-300' : 'bg-slate-200 text-slate-600'
+                            }`}
+                          >
+                            {settings.pill_1_active !== false ? <ToggleRight className="w-3.5 h-3.5 text-lime-600" /> : <ToggleLeft className="w-3.5 h-3.5 text-slate-400" />}
+                            <span>{settings.pill_1_active !== false ? 'ACTIVE' : 'INACTIVE'}</span>
+                          </button>
+                        </div>
+                        <input
+                          type="text"
+                          value={settings.pill_1_title || ''}
+                          onChange={(e) => setSettings({ ...settings, pill_1_title: e.target.value })}
+                          placeholder="Pickleball Courts"
+                          className="w-full bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1 text-xs font-bold text-slate-900"
+                        />
+                        <input
+                          type="text"
+                          value={settings.pill_1_sub || ''}
+                          onChange={(e) => setSettings({ ...settings, pill_1_sub: e.target.value })}
+                          placeholder="Covered & Outdoor"
+                          className="w-full bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1 text-xs font-medium text-slate-900"
+                        />
+                      </div>
+
+                      {/* Pill 2 */}
+                      <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] font-bold text-lime-800 uppercase">Pill 2</span>
+                          <button
+                            type="button"
+                            onClick={() => setSettings({ ...settings, pill_2_active: settings.pill_2_active === false })}
+                            className={`px-2.5 py-0.5 rounded-full text-[10px] font-black transition-all flex items-center gap-1 ${
+                              settings.pill_2_active !== false ? 'bg-lime-100 text-lime-800 border border-lime-300' : 'bg-slate-200 text-slate-600'
+                            }`}
+                          >
+                            {settings.pill_2_active !== false ? <ToggleRight className="w-3.5 h-3.5 text-lime-600" /> : <ToggleLeft className="w-3.5 h-3.5 text-slate-400" />}
+                            <span>{settings.pill_2_active !== false ? 'ACTIVE' : 'INACTIVE'}</span>
+                          </button>
+                        </div>
+                        <input
+                          type="text"
+                          value={settings.pill_2_title || ''}
+                          onChange={(e) => setSettings({ ...settings, pill_2_title: e.target.value })}
+                          placeholder="LED Night Lighting"
+                          className="w-full bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1 text-xs font-bold text-slate-900"
+                        />
+                        <input
+                          type="text"
+                          value={settings.pill_2_sub || ''}
+                          onChange={(e) => setSettings({ ...settings, pill_2_sub: e.target.value })}
+                          placeholder="Play until 10 PM"
+                          className="w-full bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1 text-xs font-medium text-slate-900"
+                        />
+                      </div>
+
+                      {/* Pill 3 */}
+                      <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] font-bold text-lime-800 uppercase">Pill 3</span>
+                          <button
+                            type="button"
+                            onClick={() => setSettings({ ...settings, pill_3_active: settings.pill_3_active === false })}
+                            className={`px-2.5 py-0.5 rounded-full text-[10px] font-black transition-all flex items-center gap-1 ${
+                              settings.pill_3_active !== false ? 'bg-lime-100 text-lime-800 border border-lime-300' : 'bg-slate-200 text-slate-600'
+                            }`}
+                          >
+                            {settings.pill_3_active !== false ? <ToggleRight className="w-3.5 h-3.5 text-lime-600" /> : <ToggleLeft className="w-3.5 h-3.5 text-slate-400" />}
+                            <span>{settings.pill_3_active !== false ? 'ACTIVE' : 'INACTIVE'}</span>
+                          </button>
+                        </div>
+                        <input
+                          type="text"
+                          value={settings.pill_3_title || ''}
+                          onChange={(e) => setSettings({ ...settings, pill_3_title: e.target.value })}
+                          placeholder="Instant Booking"
+                          className="w-full bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1 text-xs font-bold text-slate-900"
+                        />
+                        <input
+                          type="text"
+                          value={settings.pill_3_sub || ''}
+                          onChange={(e) => setSettings({ ...settings, pill_3_sub: e.target.value })}
+                          placeholder="Real-time slots"
+                          className="w-full bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1 text-xs font-medium text-slate-900"
+                        />
+                      </div>
+
+                      {/* Pill 4 */}
+                      <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] font-bold text-lime-800 uppercase">Pill 4</span>
+                          <button
+                            type="button"
+                            onClick={() => setSettings({ ...settings, pill_4_active: settings.pill_4_active === false })}
+                            className={`px-2.5 py-0.5 rounded-full text-[10px] font-black transition-all flex items-center gap-1 ${
+                              settings.pill_4_active !== false ? 'bg-lime-100 text-lime-800 border border-lime-300' : 'bg-slate-200 text-slate-600'
+                            }`}
+                          >
+                            {settings.pill_4_active !== false ? <ToggleRight className="w-3.5 h-3.5 text-lime-600" /> : <ToggleLeft className="w-3.5 h-3.5 text-slate-400" />}
+                            <span>{settings.pill_4_active !== false ? 'ACTIVE' : 'INACTIVE'}</span>
+                          </button>
+                        </div>
+                        <input
+                          type="text"
+                          value={settings.pill_4_title || ''}
+                          onChange={(e) => setSettings({ ...settings, pill_4_title: e.target.value })}
+                          placeholder="GCash / Maya"
+                          className="w-full bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1 text-xs font-bold text-slate-900"
+                        />
+                        <input
+                          type="text"
+                          value={settings.pill_4_sub || ''}
+                          onChange={(e) => setSettings({ ...settings, pill_4_sub: e.target.value })}
+                          placeholder="Easy Payment"
+                          className="w-full bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1 text-xs font-medium text-slate-900"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Why Play at BEST Inc. Cards (3 Cards) */}
+                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3 shadow-xs">
+                    <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                      <h4 className="text-xs font-black text-slate-900 flex items-center gap-1.5 uppercase tracking-wide">
+                        <Zap className="w-4 h-4 text-lime-600" />
+                        <span>"Why Play at BEST Inc." Feature Section</span>
+                      </h4>
+
+                      <button
+                        type="button"
+                        onClick={() => setSettings({ ...settings, why_play_active: settings.why_play_active === false })}
+                        className={`px-3 py-1 rounded-full text-xs font-black transition-all flex items-center gap-1 ${
+                          settings.why_play_active !== false ? 'bg-lime-100 text-lime-800 border border-lime-300' : 'bg-slate-200 text-slate-600'
+                        }`}
+                      >
+                        {settings.why_play_active !== false ? <ToggleRight className="w-4 h-4 text-lime-600" /> : <ToggleLeft className="w-4 h-4 text-slate-400" />}
+                        <span>{settings.why_play_active !== false ? 'SECTION ACTIVE' : 'SECTION INACTIVE'}</span>
+                      </button>
+                    </div>
+
+                    <div className="space-y-2">
+                      <input
+                        type="text"
+                        value={settings.why_play_title || ''}
+                        onChange={(e) => setSettings({ ...settings, why_play_title: e.target.value })}
+                        placeholder="Why Play at BEST Inc. Balamban?"
+                        className="w-full bg-white border border-slate-300 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-900"
+                      />
+                      <input
+                        type="text"
+                        value={settings.why_play_subtitle || ''}
+                        onChange={(e) => setSettings({ ...settings, why_play_subtitle: e.target.value })}
+                        placeholder="Gidisenyo alang sa beginners..."
+                        className="w-full bg-white border border-slate-300 rounded-xl px-3 py-1.5 text-xs font-medium text-slate-900"
+                      />
+                    </div>
                     
                     {/* Feature 1 */}
                     <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-2">
-                      <p className="text-[11px] font-bold text-lime-800 uppercase">Card 1</p>
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-bold text-lime-800 uppercase">Card 1</span>
+                        <button
+                          type="button"
+                          onClick={() => setSettings({ ...settings, feature_1_active: settings.feature_1_active === false })}
+                          className={`px-2.5 py-0.5 rounded-full text-[10px] font-black transition-all flex items-center gap-1 ${
+                            settings.feature_1_active !== false ? 'bg-lime-100 text-lime-800 border border-lime-300' : 'bg-slate-200 text-slate-600'
+                          }`}
+                        >
+                          {settings.feature_1_active !== false ? <ToggleRight className="w-3.5 h-3.5 text-lime-600" /> : <ToggleLeft className="w-3.5 h-3.5 text-slate-400" />}
+                          <span>{settings.feature_1_active !== false ? 'ACTIVE' : 'INACTIVE'}</span>
+                        </button>
+                      </div>
                       <input
                         type="text"
                         value={settings.feature_1_title || ''}
@@ -1208,7 +1387,19 @@ export default function OwnerPortalModal({ onClose, onCourtsUpdated }: OwnerPort
 
                     {/* Feature 2 */}
                     <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-2">
-                      <p className="text-[11px] font-bold text-lime-800 uppercase">Card 2</p>
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-bold text-lime-800 uppercase">Card 2</span>
+                        <button
+                          type="button"
+                          onClick={() => setSettings({ ...settings, feature_2_active: settings.feature_2_active === false })}
+                          className={`px-2.5 py-0.5 rounded-full text-[10px] font-black transition-all flex items-center gap-1 ${
+                            settings.feature_2_active !== false ? 'bg-lime-100 text-lime-800 border border-lime-300' : 'bg-slate-200 text-slate-600'
+                          }`}
+                        >
+                          {settings.feature_2_active !== false ? <ToggleRight className="w-3.5 h-3.5 text-lime-600" /> : <ToggleLeft className="w-3.5 h-3.5 text-slate-400" />}
+                          <span>{settings.feature_2_active !== false ? 'ACTIVE' : 'INACTIVE'}</span>
+                        </button>
+                      </div>
                       <input
                         type="text"
                         value={settings.feature_2_title || ''}
@@ -1227,7 +1418,19 @@ export default function OwnerPortalModal({ onClose, onCourtsUpdated }: OwnerPort
 
                     {/* Feature 3 */}
                     <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-2">
-                      <p className="text-[11px] font-bold text-lime-800 uppercase">Card 3</p>
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-bold text-lime-800 uppercase">Card 3</span>
+                        <button
+                          type="button"
+                          onClick={() => setSettings({ ...settings, feature_3_active: settings.feature_3_active === false })}
+                          className={`px-2.5 py-0.5 rounded-full text-[10px] font-black transition-all flex items-center gap-1 ${
+                            settings.feature_3_active !== false ? 'bg-lime-100 text-lime-800 border border-lime-300' : 'bg-slate-200 text-slate-600'
+                          }`}
+                        >
+                          {settings.feature_3_active !== false ? <ToggleRight className="w-3.5 h-3.5 text-lime-600" /> : <ToggleLeft className="w-3.5 h-3.5 text-slate-400" />}
+                          <span>{settings.feature_3_active !== false ? 'ACTIVE' : 'INACTIVE'}</span>
+                        </button>
+                      </div>
                       <input
                         type="text"
                         value={settings.feature_3_title || ''}

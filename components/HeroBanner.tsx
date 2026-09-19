@@ -63,47 +63,55 @@ export default function HeroBanner({ onBookClick, onMapClick, settings }: HeroBa
             </a>
           </div>
 
-          {/* Quick Feature Badges */}
+          {/* Quick Feature Badges (Dynamic & Toggleable by Admin) */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-6 text-left">
-            <div className="bg-white p-3.5 rounded-2xl border border-slate-200 flex items-center space-x-3 shadow-xs">
-              <div className="p-2 rounded-xl bg-lime-100 text-lime-700">
-                <Trophy className="w-4 h-4" />
+            {settings?.pill_1_active !== false && (
+              <div className="bg-white p-3.5 rounded-2xl border border-slate-200 flex items-center space-x-3 shadow-xs">
+                <div className="p-2 rounded-xl bg-lime-100 text-lime-700">
+                  <Trophy className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-slate-900">{settings?.pill_1_title || 'Pickleball Courts'}</p>
+                  <p className="text-[11px] text-slate-500 font-medium">{settings?.pill_1_sub || 'Covered & Outdoor'}</p>
+                </div>
               </div>
-              <div>
-                <p className="text-xs font-bold text-slate-900">Pickleball Courts</p>
-                <p className="text-[11px] text-slate-500 font-medium">Covered & Outdoor</p>
-              </div>
-            </div>
+            )}
 
-            <div className="bg-white p-3.5 rounded-2xl border border-slate-200 flex items-center space-x-3 shadow-xs">
-              <div className="p-2 rounded-xl bg-lime-100 text-lime-700">
-                <Sun className="w-4 h-4" />
+            {settings?.pill_2_active !== false && (
+              <div className="bg-white p-3.5 rounded-2xl border border-slate-200 flex items-center space-x-3 shadow-xs">
+                <div className="p-2 rounded-xl bg-lime-100 text-lime-700">
+                  <Sun className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-slate-900">{settings?.pill_2_title || 'LED Night Lighting'}</p>
+                  <p className="text-[11px] text-slate-500 font-medium">{settings?.pill_2_sub || 'Play until 10 PM'}</p>
+                </div>
               </div>
-              <div>
-                <p className="text-xs font-bold text-slate-900">LED Night Lighting</p>
-                <p className="text-[11px] text-slate-500 font-medium">Play until 10 PM</p>
-              </div>
-            </div>
+            )}
 
-            <div className="bg-white p-3.5 rounded-2xl border border-slate-200 flex items-center space-x-3 shadow-xs">
-              <div className="p-2 rounded-xl bg-lime-100 text-lime-700">
-                <Clock className="w-4 h-4" />
+            {settings?.pill_3_active !== false && (
+              <div className="bg-white p-3.5 rounded-2xl border border-slate-200 flex items-center space-x-3 shadow-xs">
+                <div className="p-2 rounded-xl bg-lime-100 text-lime-700">
+                  <Clock className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-slate-900">{settings?.pill_3_title || 'Instant Booking'}</p>
+                  <p className="text-[11px] text-slate-500 font-medium">{settings?.pill_3_sub || 'Real-time slots'}</p>
+                </div>
               </div>
-              <div>
-                <p className="text-xs font-bold text-slate-900">Instant Booking</p>
-                <p className="text-[11px] text-slate-500 font-medium">Real-time slots</p>
-              </div>
-            </div>
+            )}
 
-            <div className="bg-white p-3.5 rounded-2xl border border-slate-200 flex items-center space-x-3 shadow-xs">
-              <div className="p-2 rounded-xl bg-lime-100 text-lime-700">
-                <Shield className="w-4 h-4" />
+            {settings?.pill_4_active !== false && (
+              <div className="bg-white p-3.5 rounded-2xl border border-slate-200 flex items-center space-x-3 shadow-xs">
+                <div className="p-2 rounded-xl bg-lime-100 text-lime-700">
+                  <Shield className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-slate-900">{settings?.pill_4_title || 'GCash / Maya'}</p>
+                  <p className="text-[11px] text-slate-500 font-medium">{settings?.pill_4_sub || 'Easy Payment'}</p>
+                </div>
               </div>
-              <div>
-                <p className="text-xs font-bold text-slate-900">GCash / Maya</p>
-                <p className="text-[11px] text-slate-500 font-medium">Easy Payment</p>
-              </div>
-            </div>
+            )}
           </div>
 
         </div>

@@ -61,10 +61,35 @@ export const DEFAULT_ADMIN_SETTINGS: AdminSettings = {
 
   feature_1_title: 'Non-Slip Cushion Surface',
   feature_1_desc: 'Pro-grade acrylic court surfacing system reducing knee strain and ensuring maximum ball bounce accuracy.',
+  feature_1_active: true,
+
   feature_2_title: 'Night Lighting & Roof',
   feature_2_desc: 'High-lumen LED floodlights for seamless evening matches up to 10:00 PM regardless of rain or heat.',
+  feature_2_active: true,
+
   feature_3_title: 'Paddle Rental & Coaching',
-  feature_3_desc: 'Wala kay paddle? No problem! Naa tay pickleball paddle rentals (₱50/pc) ug certified coaches available.'
+  feature_3_desc: 'Wala kay paddle? No problem! Naa tay pickleball paddle rentals (₱50/pc) ug certified coaches available.',
+  feature_3_active: true,
+
+  pill_1_title: 'Pickleball Courts',
+  pill_1_sub: 'Covered & Outdoor',
+  pill_1_active: true,
+
+  pill_2_title: 'LED Night Lighting',
+  pill_2_sub: 'Play until 10 PM',
+  pill_2_active: true,
+
+  pill_3_title: 'Instant Booking',
+  pill_3_sub: 'Real-time slots',
+  pill_3_active: true,
+
+  pill_4_title: 'GCash / Maya',
+  pill_4_sub: 'Easy Payment',
+  pill_4_active: true,
+
+  why_play_title: 'Why Play at BEST Inc. Balamban?',
+  why_play_subtitle: 'Gidisenyo alang sa beginners, enthusiasts, ug tournament players sa Balamban ug silingang lungsod.',
+  why_play_active: true
 };
 
 export const INITIAL_COURTS: Court[] = [
