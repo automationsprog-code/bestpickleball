@@ -14,8 +14,8 @@ export default function Footer({ settings }: FooterProps) {
   const emailText = settings?.contact_email || 'booking@balambanbest.ph';
 
   return (
-    <footer id="contact" className="bg-white border-t border-slate-200 py-10 px-4 sm:px-6 lg:px-8 text-slate-600 text-xs">
-      <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+    <footer id="contact" className="bg-white border-t border-slate-200 py-10 px-4 sm:px-8 lg:px-12 text-slate-600 text-xs">
+      <div className="max-w-[1700px] mx-auto grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
         
         {/* Brand Info */}
         <div className="space-y-3 md:col-span-2">

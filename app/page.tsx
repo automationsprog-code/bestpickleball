@@ -10,6 +10,7 @@ import LocationMap from '@/components/LocationMap';
 import MyBookings from '@/components/MyBookings';
 import ChatSupport from '@/components/ChatSupport';
 import Footer from '@/components/Footer';
+import LoadingScreen from '@/components/LoadingScreen';
 import { Court, Booking, AdminSettings } from '@/lib/types';
 import { getCourts, getAllUserBookings, getAdminSettings, supabase } from '@/lib/supabase';
 import { purgeStaleLocalCaches } from '@/lib/version';
@@ -88,6 +89,9 @@ export default function Home() {
   return (
     <div className="bg-white min-h-screen text-slate-900 flex flex-col font-sans selection:bg-lime-500 selection:text-slate-950 relative overflow-x-hidden">
       
+      {/* Animated Pickleball Paddle & Bouncing Ball Splash Loading Screen */}
+      <LoadingScreen />
+
       {/* Navbar Header */}
       <Navbar 
         onOpenMyBookings={() => setIsMyBookingsOpen(true)}
@@ -104,7 +108,7 @@ export default function Home() {
       />
 
       {/* Courts Selection Section */}
-      <section id="courts" className="py-14 px-4 sm:px-8 lg:px-12 max-w-[1600px] mx-auto w-full space-y-8 bg-white/90 relative z-10">
+      <section id="courts" className="py-10 sm:py-12 px-4 sm:px-8 lg:px-12 max-w-[1700px] mx-auto w-full space-y-8 bg-white">
         
         {/* Section Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200 pb-6">
@@ -161,8 +165,8 @@ export default function Home() {
       </section>
 
       {/* Rates & Amenities Section */}
-      <section id="rates" className="py-14 px-4 sm:px-8 lg:px-12 bg-slate-50/80 backdrop-blur-xs border-y border-slate-200 relative z-10">
-        <div className="max-w-[1600px] mx-auto space-y-8">
+      <section id="rates" className="py-12 px-4 sm:px-8 lg:px-12 bg-slate-50 border-y border-slate-200">
+        <div className="max-w-[1700px] mx-auto space-y-8">
           <div className="text-center space-y-2 max-w-2xl mx-auto">
             <h2 className="text-2xl sm:text-3xl font-black text-slate-900">Why Play at BEST Inc. Balamban?</h2>
             <p className="text-slate-600 text-xs sm:text-sm font-medium">

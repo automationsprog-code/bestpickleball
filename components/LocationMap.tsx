@@ -17,8 +17,8 @@ export default function LocationMap({ settings }: LocationMapProps) {
   const landlineText = settings?.contact_landline || '(032) 492-1234';
 
   return (
-    <div id="location" className="py-14 px-4 sm:px-6 lg:px-8 bg-slate-50 border-t border-slate-200">
-      <div className="max-w-7xl mx-auto space-y-8">
+    <div id="location" className="py-12 px-4 sm:px-8 lg:px-12 bg-slate-50 border-t border-slate-200">
+      <div className="max-w-[1700px] mx-auto space-y-8">
         
         {/* Section Title */}
         <div className="text-center space-y-2">

@@ -18,21 +18,12 @@ export default function HeroBanner({ onBookClick, onMapClick, settings }: HeroBa
   const subtitle = settings?.hero_subtitle || 'Duwa na og Pickleball sa pinakanindot ug kompleto nga venue sa Balamban! High-traction covered & outdoor courts with LED night lighting, paddle rentals, ug easy online slot reservations via Supabase & GCash.';
 
   return (
-    <div id="hero" className="relative overflow-hidden bg-gradient-to-b from-slate-100 via-lime-50/20 to-slate-50 pt-10 pb-16 px-4 sm:px-6 lg:px-8 border-b border-slate-200">
+    <div id="hero" className="relative overflow-hidden bg-gradient-to-b from-slate-100 via-lime-50/20 to-slate-50 pt-6 sm:pt-8 pb-12 px-4 sm:px-8 lg:px-12 border-b border-slate-200">
       
       {/* Decorative Glow background */}
       <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[250px] bg-lime-400/20 blur-[100px] rounded-full pointer-events-none"></div>
 
-      {/* Centered Background Watermark Logo in Hero Screen */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none opacity-[0.08] overflow-hidden select-none">
-        <img 
-          src="/logo.jpg" 
-          alt="Balamban BEST Inc. Watermark" 
-          className="w-[450px] sm:w-[620px] h-[450px] sm:h-[620px] object-contain rounded-full mix-blend-multiply filter contrast-125"
-        />
-      </div>
-
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-[1700px] mx-auto">
         <div className="text-center space-y-6 max-w-3xl mx-auto relative z-10">
           
           {/* Location & Brand Badge with Official Logo */}
