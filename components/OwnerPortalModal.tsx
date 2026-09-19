@@ -1232,7 +1232,7 @@ export default function OwnerPortalModal({ onClose, onCourtsUpdated }: OwnerPort
                     </h4>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       <div>
-                        <label className="text-xs font-bold text-slate-800 block mb-1">Hotline / GCash Phone</label>
+                        <label className="text-xs font-bold text-slate-800 block mb-1">Court Hotline / Mobile Phone</label>
                         <input
                           type="text"
                           value={settings.contact_phone || ''}

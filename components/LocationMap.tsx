@@ -72,7 +72,7 @@ export default function LocationMap({ settings }: LocationMapProps) {
                 <div className="flex items-center space-x-3">
                   <Phone className="w-4 h-4 text-lime-600 shrink-0" />
                   <div>
-                    <strong className="text-slate-900">Court Hotline / GCash:</strong>
+                    <strong className="text-slate-900">Court Hotline / Mobile:</strong>
                     <p className="text-slate-600">{phoneText} / {landlineText}</p>
                   </div>
                 </div>
