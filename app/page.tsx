@@ -88,15 +88,6 @@ export default function Home() {
   return (
     <div className="bg-white min-h-screen text-slate-900 flex flex-col font-sans selection:bg-lime-500 selection:text-slate-950 relative overflow-x-hidden">
       
-      {/* Official Full-Page Background Watermark Logo (Spans across entire site background) */}
-      <div className="fixed inset-0 flex items-center justify-center pointer-events-none opacity-[0.08] z-0 overflow-hidden select-none">
-        <img 
-          src="/logo.jpg" 
-          alt="Balamban BEST Inc. Watermark Background" 
-          className="w-[650px] sm:w-[950px] max-w-none h-[650px] sm:h-[950px] object-contain rounded-full mix-blend-multiply filter contrast-125"
-        />
-      </div>
-
       {/* Navbar Header */}
       <Navbar 
         onOpenMyBookings={() => setIsMyBookingsOpen(true)}

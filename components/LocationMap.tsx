@@ -17,8 +17,18 @@ export default function LocationMap({ settings }: LocationMapProps) {
   const landlineText = settings?.contact_landline || '(032) 492-1234';
 
   return (
-    <div id="location" className="py-14 px-4 sm:px-6 lg:px-8 bg-slate-50 border-t border-slate-200">
-      <div className="max-w-7xl mx-auto space-y-8">
+    <div id="location" className="relative overflow-hidden py-14 px-4 sm:px-6 lg:px-8 bg-slate-50 border-t border-slate-200">
+      
+      {/* Soft Background Watermark Logo Accent */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none opacity-[0.04] overflow-hidden select-none">
+        <img 
+          src="/logo.jpg" 
+          alt="Balamban BEST Inc. Watermark Accent" 
+          className="w-[500px] sm:w-[650px] h-[500px] sm:h-[650px] object-contain rounded-full mix-blend-multiply filter contrast-125"
+        />
+      </div>
+
+      <div className="max-w-7xl mx-auto space-y-8 relative z-10">
         
         {/* Section Title */}
         <div className="text-center space-y-2">
