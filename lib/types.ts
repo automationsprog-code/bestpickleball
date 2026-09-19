@@ -91,6 +91,14 @@ export interface AdminSettings {
   why_play_title?: string;
   why_play_subtitle?: string;
   why_play_active?: boolean;
+
+  // Location & Contact Card Editable Fields
+  location_card_title?: string;
+  location_gps?: string;
+  location_hours_text?: string;
+  location_amenity_1?: string;
+  location_amenity_2?: string;
+  google_maps_url?: string;
 }
 
 export interface ChatMessage {

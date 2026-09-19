@@ -1272,6 +1272,70 @@ export default function OwnerPortalModal({ onClose, onCourtsUpdated }: OwnerPort
                         className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-medium text-slate-900 focus:outline-none focus:border-lime-600"
                       />
                     </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                      <div>
+                        <label className="text-xs font-bold text-slate-800 block mb-1">Location Card Header Title</label>
+                        <input
+                          type="text"
+                          value={settings.location_card_title || ''}
+                          onChange={(e) => setSettings({ ...settings, location_card_title: e.target.value })}
+                          placeholder="Balamban BEST Inc. Address"
+                          className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-medium text-slate-900 focus:outline-none focus:border-lime-600"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold text-slate-800 block mb-1">GPS Coordinates</label>
+                        <input
+                          type="text"
+                          value={settings.location_gps || ''}
+                          onChange={(e) => setSettings({ ...settings, location_gps: e.target.value })}
+                          placeholder="10.5124145, 123.7298596"
+                          className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-mono font-bold text-slate-900 focus:outline-none focus:border-lime-600"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-slate-800 block mb-1">Operating Hours Display Text</label>
+                      <input
+                        type="text"
+                        value={settings.location_hours_text || ''}
+                        onChange={(e) => setSettings({ ...settings, location_hours_text: e.target.value })}
+                        placeholder="Monday - Sunday: 6:00 AM – 10:00 PM"
+                        className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-medium text-slate-900 focus:outline-none focus:border-lime-600"
+                      />
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-xs font-bold text-slate-800 block mb-1">On-Site Amenity Badge 1</label>
+                        <input
+                          type="text"
+                          value={settings.location_amenity_1 || ''}
+                          onChange={(e) => setSettings({ ...settings, location_amenity_1: e.target.value })}
+                          placeholder="Free Parking"
+                          className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-medium text-slate-900 focus:outline-none focus:border-lime-600"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold text-slate-800 block mb-1">On-Site Amenity Badge 2</label>
+                        <input
+                          type="text"
+                          value={settings.location_amenity_2 || ''}
+                          onChange={(e) => setSettings({ ...settings, location_amenity_2: e.target.value })}
+                          placeholder="Snack Lounge"
+                          className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-medium text-slate-900 focus:outline-none focus:border-lime-600"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-slate-800 block mb-1">Google Maps Button URL Link</label>
+                      <input
+                        type="text"
+                        value={settings.google_maps_url || ''}
+                        onChange={(e) => setSettings({ ...settings, google_maps_url: e.target.value })}
+                        placeholder="https://www.google.com/maps/place/..."
+                        className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-medium text-slate-900 focus:outline-none focus:border-lime-600"
+                      />
+                    </div>
                   </div>
 
                   {/* Hero Quick Feature Pills Controls (4 Pills) */}

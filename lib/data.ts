@@ -89,7 +89,14 @@ export const DEFAULT_ADMIN_SETTINGS: AdminSettings = {
 
   why_play_title: 'Why Play at BEST Inc. Balamban?',
   why_play_subtitle: 'Gidisenyo alang sa beginners, enthusiasts, ug tournament players sa Balamban ug silingang lungsod.',
-  why_play_active: true
+  why_play_active: true,
+
+  location_card_title: 'Balamban BEST Inc. Address',
+  location_gps: '10.5124145, 123.7298596',
+  location_hours_text: 'Monday - Sunday: 6:00 AM – 10:00 PM',
+  location_amenity_1: 'Free Parking',
+  location_amenity_2: 'Snack Lounge',
+  google_maps_url: 'https://www.google.com/maps/place/BALAMBAN+EXTENSIVE+SKILLS+AND+TECHNOLOGY,+INC./@10.5124198,123.7272847,1193m/data=!3m2!1e3!4b1!4m6!3m5!1s0x33a909a00f7169d7:0xaef1d3f6c0a056e2!8m2!3d10.5124145!4d123.7298596!16s%2Fg%2F11ry0t7wjl?entry=ttu'
 };
 
 export const INITIAL_COURTS: Court[] = [
