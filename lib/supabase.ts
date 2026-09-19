@@ -125,10 +125,19 @@ export async function getCourts(): Promise<Court[]> {
 
   // When Supabase Cloud DB is connected, it is 100% the SINGLE SOURCE OF TRUTH across all devices!
   if (isRemoteConnected) {
-    const validRemote = remoteCourts.filter(c => !deletedIds.includes(c.id));
+    // Deduplicate remote courts by court ID and normalized court name
+    const courtMap = new Map<string, Court>();
+    remoteCourts.forEach(c => {
+      const normKey = c.name ? c.name.toLowerCase().trim() : c.id;
+      if (!courtMap.has(c.id) && !courtMap.has(normKey)) {
+        courtMap.set(normKey, c);
+      }
+    });
+    const validRemote = Array.from(courtMap.values());
     if (typeof window !== 'undefined') {
       localStorage.setItem('balamban_pickleball_courts', JSON.stringify(validRemote));
-      localStorage.removeItem('balamban_custom_created_courts'); // Clear stale legacy courts
+      localStorage.removeItem('balamban_custom_created_courts');
+      localStorage.removeItem('balamban_deleted_court_ids');
     }
     return validRemote;
   }
@@ -153,10 +162,14 @@ export async function createCourt(newCourtData: Omit<Court, 'id'>): Promise<Cour
   // 1. Save locally first so newly created court NEVER disappears
   saveCustomCreatedCourt(court);
 
-  // 2. Try inserting into Supabase
+  // 2. Try inserting into Supabase (strip base64 image — too large for DB)
   if (supabase) {
     try {
-      const { error } = await supabase.from('courts').insert([court]).select().single();
+      const isBase64 = typeof court.image_url === 'string' && court.image_url.startsWith('data:');
+      const payload = isBase64
+        ? { ...court, image_url: 'https://images.unsplash.com/photo-1599586120429-48281b6f0eca?auto=format&fit=crop&w=1200&q=80' }
+        : court;
+      const { error } = await supabase.from('courts').insert([payload]).select().single();
       if (error) {
         console.warn('Supabase insert court warning (court saved locally):', error);
       }
@@ -171,10 +184,17 @@ export async function createCourt(newCourtData: Omit<Court, 'id'>): Promise<Cour
 export async function updateCourtDetails(id: string, updates: Partial<Court>): Promise<boolean> {
   let success = false;
 
-  // 1. Update Supabase Cloud DB first
+  // Strip base64 image from Supabase payload — base64 blobs are too large and
+  // cause duplicate court rows. Only plain HTTPS URLs are stored remotely.
+  const isBase64Image = typeof updates.image_url === 'string' && updates.image_url.startsWith('data:');
+  const supabaseUpdates: Partial<Court> = isBase64Image
+    ? { ...updates, image_url: undefined }
+    : updates;
+
+  // 1. Update Supabase Cloud DB first (without base64 image)
   if (supabase) {
     try {
-      const { error } = await supabase.from('courts').update(updates).eq('id', id);
+      const { error } = await supabase.from('courts').update(supabaseUpdates).eq('id', id);
       if (!error) success = true;
       else console.warn('Supabase update court warning:', error);
     } catch (err) {
@@ -321,6 +341,30 @@ export async function createBooking(newBooking: Omit<Booking, 'id' | 'created_at
 }
 
 export async function getAllUserBookings(): Promise<Booking[]> {
+  let remoteBookings: Booking[] = [];
+  let isRemoteConnected = false;
+
+  if (supabase) {
+    try {
+      const { data, error } = await supabase.from('bookings').select('*').order('created_at', { ascending: false });
+      if (!error && data) {
+        remoteBookings = data.map(fromDbBooking);
+        isRemoteConnected = true;
+      }
+    } catch (err) {
+      console.warn('Supabase fetch all bookings error:', err);
+    }
+  }
+
+  // When Supabase Cloud DB is connected, it is 100% the SINGLE SOURCE OF TRUTH across all devices!
+  if (isRemoteConnected) {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('balamban_pickleball_bookings', JSON.stringify(remoteBookings));
+    }
+    return remoteBookings;
+  }
+
+  // Fallback ONLY when Supabase is completely unconfigured/offline
   let localBookings: Booking[] = [];
   if (typeof window !== 'undefined') {
     const local = localStorage.getItem('balamban_pickleball_bookings');
@@ -333,46 +377,7 @@ export async function getAllUserBookings(): Promise<Booking[]> {
     }
   }
 
-  let remoteBookings: Booking[] = [];
-  if (supabase) {
-    try {
-      const { data, error } = await supabase.from('bookings').select('*').order('created_at', { ascending: false });
-      if (!error && data) {
-        remoteBookings = data.map(fromDbBooking);
-
-        // Auto-sync any unsynced local bookings to Supabase
-        const remoteRefs = new Set(remoteBookings.map(r => r.reference_no || r.id));
-        const unsynced = localBookings.filter(l => (l.id || l.reference_no) && !remoteRefs.has(l.reference_no) && !remoteRefs.has(l.id));
-        
-        if (unsynced.length > 0) {
-          const payloadList = unsynced.map(toDbBooking);
-          const { error: syncError } = await supabase.from('bookings').insert(payloadList);
-          if (!syncError) {
-            const { data: refreshed } = await supabase.from('bookings').select('*').order('created_at', { ascending: false });
-            if (refreshed) remoteBookings = refreshed.map(fromDbBooking);
-          }
-        }
-      }
-    } catch (err) {
-      console.warn('Supabase fetch all bookings error:', err);
-    }
-  }
-
-  // Merge local & remote bookings, avoiding duplicates by id or reference_no
-  const mergedMap = new Map<string, Booking>();
-  remoteBookings.forEach(b => mergedMap.set(b.id || b.reference_no, b));
-  localBookings.forEach(b => {
-    const key = b.id || b.reference_no;
-    if (!mergedMap.has(key)) {
-      mergedMap.set(key, b);
-    }
-  });
-
-  const allMerged = Array.from(mergedMap.values());
-  if (typeof window !== 'undefined') {
-    localStorage.setItem('balamban_pickleball_bookings', JSON.stringify(allMerged));
-  }
-  return allMerged;
+  return localBookings.length > 0 ? localBookings : INITIAL_BOOKINGS;
 }
 
 export async function getBookingsForDate(date: string): Promise<Booking[]> {

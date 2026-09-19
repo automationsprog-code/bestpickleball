@@ -1,9 +1,9 @@
-﻿/**
+/**
  * APP_DATA_VERSION - bump this string every time you make a breaking change
  * to courts, bookings, or settings data so that ALL devices (incognito, mobile,
  * other browsers) immediately discard their stale localStorage on next load.
  */
-export const APP_DATA_VERSION = 'v2026-09-18-02';
+export const APP_DATA_VERSION = 'v2026-09-19-01';
 
 const VERSION_KEY = 'balamban_app_data_version';
 
