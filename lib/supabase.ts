@@ -114,7 +114,7 @@ export async function getCourts(): Promise<Court[]> {
   if (supabase) {
     try {
       const { data, error } = await supabase.from('courts').select('*').order('created_at', { ascending: true });
-      if (!error && data && data.length > 0) {
+      if (!error && data !== null) {
         remoteCourts = data as Court[];
         isRemoteConnected = true;
       }
@@ -232,9 +232,10 @@ export async function deleteCourt(id: string): Promise<boolean> {
   markCourtAsDeletedLocally(id);
   removeCustomCreatedCourt(id);
 
-  // 2. Perform deletion in Supabase DB if connected
+  // 2. Perform deletion in Supabase DB if connected (first clear FK references in bookings)
   if (supabase) {
     try {
+      await supabase.from('bookings').update({ court_id: null }).eq('court_id', id);
       const { error } = await supabase.from('courts').delete().eq('id', id);
       if (error) {
         console.warn('Supabase delete error (court remains deleted locally):', error);

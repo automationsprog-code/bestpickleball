@@ -73,9 +73,9 @@ export default function Home() {
     }
   };
 
-  // Robust active court pool for mobile & desktop bookers
+  // Active courts list for bookers (respects empty court list when courts are deleted)
   const activeCourtsForBookers = courts.filter(court => court.is_active !== false && (court.is_active as any) !== 'false');
-  const courtsPool = activeCourtsForBookers.length > 0 ? activeCourtsForBookers : (courts.length > 0 ? courts : INITIAL_COURTS);
+  const courtsPool = activeCourtsForBookers;
 
   const filteredCourts = courtsPool.filter(court => {
     if (activeFilter === 'All') return true;
