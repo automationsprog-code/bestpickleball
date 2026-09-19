@@ -480,6 +480,18 @@ export async function getAdminSettings(): Promise<AdminSettings> {
             (dbSettings as any)[key] = data[key];
           }
         });
+
+        // Unpack serialized custom JSON payload if stored in hero_subtitle
+        if (typeof data.hero_subtitle === 'string' && data.hero_subtitle.includes('___JSON___')) {
+          const parts = data.hero_subtitle.split('___JSON___');
+          dbSettings.hero_subtitle = parts[0];
+          try {
+            const parsedCustom = JSON.parse(parts[1]);
+            Object.assign(dbSettings, parsedCustom);
+          } catch (e) {
+            console.error('Failed to parse custom settings JSON:', e);
+          }
+        }
       }
     } catch (err) {
       console.warn('Supabase settings error:', err);
@@ -493,8 +505,6 @@ export async function getAdminSettings(): Promise<AdminSettings> {
   };
 
   // Supabase Cloud DB settings (dbSettings) take ultimate precedence across ALL devices!
-  // This guarantees that whatever Admin updates in Supabase (e.g. contact_email: sample@gmail.com)
-  // is 100% synchronized to ALL devices (Mobile, Desktop, Tablet, Incognito) without local device cache overrides!
   const merged: AdminSettings = {
     ...baseSettings,
     ...dbSettings
@@ -504,7 +514,7 @@ export async function getAdminSettings(): Promise<AdminSettings> {
 }
 
 export async function updateAdminSettings(settings: AdminSettings): Promise<boolean> {
-  // 1. ALWAYS store in localStorage first so local state is saved immediately & permanently
+  // 1. ALWAYS store in localStorage first
   if (typeof window !== 'undefined') {
     localStorage.setItem('balamban_pickleball_admin_settings', JSON.stringify(settings));
   }
@@ -512,22 +522,72 @@ export async function updateAdminSettings(settings: AdminSettings): Promise<bool
   // 2. Persist to Supabase DB if connected
   if (supabase) {
     try {
-      const { error } = await supabase.from('settings').upsert([{ id: 'default', ...settings }]);
+      // Serialize custom fields into hero_subtitle with ___JSON___ marker
+      const customPayload = {
+        why_play_active: settings.why_play_active,
+        feature_1_active: settings.feature_1_active,
+        feature_2_active: settings.feature_2_active,
+        feature_3_active: settings.feature_3_active,
+        pill_1_active: settings.pill_1_active,
+        pill_2_active: settings.pill_2_active,
+        pill_3_active: settings.pill_3_active,
+        pill_4_active: settings.pill_4_active,
+        pill_1_title: settings.pill_1_title,
+        pill_1_sub: settings.pill_1_sub,
+        pill_2_title: settings.pill_2_title,
+        pill_2_sub: settings.pill_2_sub,
+        pill_3_title: settings.pill_3_title,
+        pill_3_sub: settings.pill_3_sub,
+        pill_4_title: settings.pill_4_title,
+        pill_4_sub: settings.pill_4_sub,
+        feature_1_title: settings.feature_1_title,
+        feature_1_desc: settings.feature_1_desc,
+        feature_2_title: settings.feature_2_title,
+        feature_2_desc: settings.feature_2_desc,
+        feature_3_title: settings.feature_3_title,
+        feature_3_desc: settings.feature_3_desc,
+        why_play_title: settings.why_play_title,
+        why_play_subtitle: settings.why_play_subtitle,
+        location_card_title: settings.location_card_title,
+        location_gps: settings.location_gps,
+        location_hours_text: settings.location_hours_text,
+        location_amenity_1: settings.location_amenity_1,
+        location_amenity_2: settings.location_amenity_2,
+        google_maps_url: settings.google_maps_url,
+        footer_hours_header: settings.footer_hours_header,
+        footer_hours_text: settings.footer_hours_text,
+        footer_payments_text: settings.footer_payments_text,
+        footer_status_text: settings.footer_status_text
+      };
+
+      const rawSub = settings.hero_subtitle || '';
+      const cleanSub = rawSub.split('___JSON___')[0];
+      const combinedSub = cleanSub + '___JSON___' + JSON.stringify(customPayload);
+
+      const dbPayload = {
+        id: 'default',
+        opening_hour: settings.opening_hour || 6,
+        closing_hour: settings.closing_hour || 22,
+        contact_phone: settings.contact_phone || '09458819427',
+        contact_landline: settings.contact_landline || '(032) 492-1234',
+        contact_email: settings.contact_email || 'booking@balambanbest.ph',
+        location_address: settings.location_address || 'BALAMBAN EXTENSIVE SKILLS AND TECHNOLOGY, INC...',
+        gcash_number: settings.gcash_number || '',
+        gcash_name: settings.gcash_name || '',
+        qr_code_url: settings.qr_code_url || '',
+        maya_number: settings.maya_number || '',
+        maya_name: settings.maya_name || '',
+        maya_qr_url: settings.maya_qr_url || '',
+        landbank_number: settings.landbank_number || '',
+        landbank_name: settings.landbank_name || '',
+        landbank_qr_url: settings.landbank_qr_url || '',
+        hero_title: settings.hero_title || '',
+        hero_subtitle: combinedSub
+      };
+
+      const { error } = await supabase.from('settings').upsert([dbPayload]);
       if (error) {
-        console.warn('Supabase settings upsert warning (trying sanitized fallback):', error);
-        // Fallback: strip unknown column fields if table schema does not include new toggles
-        const sanitized: any = { id: 'default' };
-        const knownCols = [
-          'id', 'opening_hour', 'closing_hour', 'contact_phone', 'contact_email', 'contact_landline',
-          'location_address', 'gcash_number', 'gcash_name', 'qr_code_url', 'maya_number', 'maya_name',
-          'maya_qr_url', 'landbank_number', 'landbank_name', 'landbank_qr_url', 'hero_title', 'hero_subtitle'
-        ];
-        Object.keys(settings).forEach((k) => {
-          if (knownCols.includes(k)) {
-            sanitized[k] = (settings as any)[k];
-          }
-        });
-        await supabase.from('settings').upsert([sanitized]);
+        console.warn('Supabase settings upsert error:', error);
       }
     } catch (err) {
       console.warn('Supabase update settings error:', err);

@@ -99,6 +99,12 @@ export interface AdminSettings {
   location_amenity_1?: string;
   location_amenity_2?: string;
   google_maps_url?: string;
+
+  // Footer Hours & Payments Editable Fields
+  footer_hours_header?: string;
+  footer_hours_text?: string;
+  footer_payments_text?: string;
+  footer_status_text?: string;
 }
 
 export interface ChatMessage {

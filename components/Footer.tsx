@@ -38,10 +38,14 @@ export default function Footer({ settings }: FooterProps) {
 
         {/* Payment & Operating Hours */}
         <div className="space-y-2 font-medium">
-          <h4 className="font-black text-slate-900 text-sm">Hours & Payments</h4>
-          <p>Open Daily: 6:00 AM - 10:00 PM</p>
-          <p>Accepted: GCash, Maya, Cash</p>
-          <p className="text-lime-700 font-extrabold mt-1">Supabase Realtime Connected</p>
+          <h4 className="font-black text-slate-900 text-sm">
+            {settings?.footer_hours_header || 'Hours & Payments'}
+          </h4>
+          <p>{settings?.footer_hours_text || 'Open Daily: 6:00 AM - 10:00 PM'}</p>
+          <p>{settings?.footer_payments_text || 'Accepted: GCash, Maya, Cash'}</p>
+          <p className="text-lime-700 font-extrabold mt-1">
+            {settings?.footer_status_text || 'Supabase Realtime Connected'}
+          </p>
         </div>
 
       </div>

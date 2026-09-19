@@ -1338,6 +1338,56 @@ export default function OwnerPortalModal({ onClose, onCourtsUpdated }: OwnerPort
                     </div>
                   </div>
 
+                  {/* Footer Hours & Payments Text Editor */}
+                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3 shadow-xs">
+                    <h4 className="text-xs font-black text-slate-900 flex items-center gap-1.5 uppercase tracking-wide">
+                      <Clock className="w-4 h-4 text-lime-600" />
+                      <span>Footer Hours & Payments Info Editor</span>
+                    </h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-xs font-bold text-slate-800 block mb-1">Footer Hours Header Title</label>
+                        <input
+                          type="text"
+                          value={settings.footer_hours_header || ''}
+                          onChange={(e) => setSettings({ ...settings, footer_hours_header: e.target.value })}
+                          placeholder="Hours & Payments"
+                          className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-medium text-slate-900 focus:outline-none focus:border-lime-600"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold text-slate-800 block mb-1">Footer Operating Hours Text</label>
+                        <input
+                          type="text"
+                          value={settings.footer_hours_text || ''}
+                          onChange={(e) => setSettings({ ...settings, footer_hours_text: e.target.value })}
+                          placeholder="Open Daily: 6:00 AM - 10:00 PM"
+                          className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-medium text-slate-900 focus:outline-none focus:border-lime-600"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold text-slate-800 block mb-1">Footer Accepted Payments Text</label>
+                        <input
+                          type="text"
+                          value={settings.footer_payments_text || ''}
+                          onChange={(e) => setSettings({ ...settings, footer_payments_text: e.target.value })}
+                          placeholder="Accepted: GCash, Maya, Cash"
+                          className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-medium text-slate-900 focus:outline-none focus:border-lime-600"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold text-slate-800 block mb-1">Footer Status Tag Text</label>
+                        <input
+                          type="text"
+                          value={settings.footer_status_text || ''}
+                          onChange={(e) => setSettings({ ...settings, footer_status_text: e.target.value })}
+                          placeholder="Supabase Realtime Connected"
+                          className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-lime-700 focus:outline-none focus:border-lime-600"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
                   {/* Hero Quick Feature Pills Controls (4 Pills) */}
                   <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3 shadow-xs">
                     <h4 className="text-xs font-black text-slate-900 flex items-center justify-between uppercase tracking-wide">

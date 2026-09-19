@@ -96,7 +96,12 @@ export const DEFAULT_ADMIN_SETTINGS: AdminSettings = {
   location_hours_text: 'Monday - Sunday: 6:00 AM – 10:00 PM',
   location_amenity_1: 'Free Parking',
   location_amenity_2: 'Snack Lounge',
-  google_maps_url: 'https://www.google.com/maps/place/BALAMBAN+EXTENSIVE+SKILLS+AND+TECHNOLOGY,+INC./@10.5124198,123.7272847,1193m/data=!3m2!1e3!4b1!4m6!3m5!1s0x33a909a00f7169d7:0xaef1d3f6c0a056e2!8m2!3d10.5124145!4d123.7298596!16s%2Fg%2F11ry0t7wjl?entry=ttu'
+  google_maps_url: 'https://www.google.com/maps/place/BALAMBAN+EXTENSIVE+SKILLS+AND+TECHNOLOGY,+INC./@10.5124198,123.7272847,1193m/data=!3m2!1e3!4b1!4m6!3m5!1s0x33a909a00f7169d7:0xaef1d3f6c0a056e2!8m2!3d10.5124145!4d123.7298596!16s%2Fg%2F11ry0t7wjl?entry=ttu',
+
+  footer_hours_header: 'Hours & Payments',
+  footer_hours_text: 'Open Daily: 6:00 AM - 10:00 PM',
+  footer_payments_text: 'Accepted: GCash, Maya, Cash',
+  footer_status_text: 'Supabase Realtime Connected'
 };
 
 export const INITIAL_COURTS: Court[] = [
