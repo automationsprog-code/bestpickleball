@@ -389,7 +389,7 @@ export default function OwnerPortalModal({ onClose, onCourtsUpdated }: OwnerPort
                   <input
                     type="text"
                     required
-                    placeholder="e.g. bestadmin"
+                    placeholder="Enter username"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     className="w-full bg-slate-50 border border-slate-300 rounded-xl pl-9 pr-3 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-lime-600 font-medium"
