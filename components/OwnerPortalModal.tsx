@@ -45,6 +45,7 @@ export default function OwnerPortalModal({ onClose, onCourtsUpdated }: OwnerPort
   const [editSurface, setEditSurface] = useState('');
   const [editDesc, setEditDesc] = useState('');
   const [editImageUrl, setEditImageUrl] = useState('');
+  const [editFeatures, setEditFeatures] = useState('Covered Roof, LED Lighting, Net System');
   const [savingEdit, setSavingEdit] = useState(false);
 
   // Settings state (QR Code Upload & Operating Hours)
@@ -133,6 +134,11 @@ export default function OwnerPortalModal({ onClose, onCourtsUpdated }: OwnerPort
     setEditSurface(court.surface || '');
     setEditDesc(court.description || '');
     setEditImageUrl(court.image_url || '');
+    setEditFeatures(
+      court.features && Array.isArray(court.features) && court.features.length > 0
+        ? court.features.join(', ')
+        : 'Covered Roof, LED Lighting, Net System'
+    );
   };
 
   // Compress uploaded images via HTML5 Canvas to lightweight ~80-120KB JPEGs
@@ -246,13 +252,15 @@ export default function OwnerPortalModal({ onClose, onCourtsUpdated }: OwnerPort
 
     setSavingEdit(true);
     try {
+      const featuresArr = editFeatures.split(',').map(f => f.trim()).filter(Boolean);
       await updateCourtDetails(editingCourt.id, {
         name: editName,
         type: editType,
         surface: editSurface,
         hourly_rate: Number(editRate),
         description: editDesc,
-        image_url: editImageUrl
+        image_url: editImageUrl,
+        features: featuresArr
       });
       setEditingCourt(null);
       await loadData();
@@ -767,6 +775,51 @@ export default function OwnerPortalModal({ onClose, onCourtsUpdated }: OwnerPort
                         />
                       </div>
 
+                      {/* Court Features & Badges Editor */}
+                      <div>
+                        <label className="text-xs font-bold text-slate-800 block mb-1">
+                          Court Features & Badges (Active Badges)
+                        </label>
+                        <input
+                          type="text"
+                          value={editFeatures}
+                          onChange={(e) => setEditFeatures(e.target.value)}
+                          placeholder="Covered Roof, LED Lighting, Net System"
+                          className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-lime-600 font-medium"
+                        />
+                        <p className="text-[10px] text-slate-500 mt-1 font-medium">
+                          I-type ang features (comma separated) o i-click ang quick badge buttons sa ubos para ma-Active/Inactive:
+                        </p>
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          {['Covered Roof', 'LED Lighting', 'Net System', 'Pro Acrylic Surface', 'Night Floodlights', 'Air Conditioned', 'Bleachers', 'Paddle Rental'].map((tag) => {
+                            const currentList = editFeatures.split(',').map(f => f.trim()).filter(Boolean);
+                            const isPresent = currentList.includes(tag);
+                            return (
+                              <button
+                                key={tag}
+                                type="button"
+                                onClick={() => {
+                                  if (isPresent) {
+                                    const newList = currentList.filter(f => f !== tag);
+                                    setEditFeatures(newList.join(', '));
+                                  } else {
+                                    const newList = [...currentList, tag];
+                                    setEditFeatures(newList.join(', '));
+                                  }
+                                }}
+                                className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition cursor-pointer ${
+                                  isPresent
+                                    ? 'bg-lime-500 text-slate-950 border-lime-600 shadow-xs'
+                                    : 'bg-slate-100 text-slate-600 border-slate-300 hover:bg-slate-200'
+                                }`}
+                              >
+                                {isPresent ? `✓ ${tag} (ACTIVE)` : `+ ${tag}`}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
                       {/* Photo Uploader */}
                       <div>
                         <label className="text-xs font-bold text-slate-800 block mb-1">Upload / Change Court Picture *</label>
@@ -859,6 +912,47 @@ export default function OwnerPortalModal({ onClose, onCourtsUpdated }: OwnerPort
                             onChange={(e) => setNewCourtRate(Number(e.target.value))}
                             className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-lime-600"
                           />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="text-xs font-bold text-slate-800 block mb-1">
+                          Court Features & Badges (Comma-separated)
+                        </label>
+                        <input
+                          type="text"
+                          value={newCourtFeatures}
+                          onChange={(e) => setNewCourtFeatures(e.target.value)}
+                          placeholder="Covered Roof, LED Lighting, Net System"
+                          className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-lime-600 font-medium"
+                        />
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          {['Covered Roof', 'LED Lighting', 'Net System', 'Pro Acrylic Surface', 'Night Floodlights', 'Air Conditioned', 'Bleachers', 'Paddle Rental'].map((tag) => {
+                            const currentList = newCourtFeatures.split(',').map(f => f.trim()).filter(Boolean);
+                            const isPresent = currentList.includes(tag);
+                            return (
+                              <button
+                                key={tag}
+                                type="button"
+                                onClick={() => {
+                                  if (isPresent) {
+                                    const newList = currentList.filter(f => f !== tag);
+                                    setNewCourtFeatures(newList.join(', '));
+                                  } else {
+                                    const newList = [...currentList, tag];
+                                    setNewCourtFeatures(newList.join(', '));
+                                  }
+                                }}
+                                className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition cursor-pointer ${
+                                  isPresent
+                                    ? 'bg-lime-500 text-slate-950 border-lime-600 shadow-xs'
+                                    : 'bg-slate-100 text-slate-600 border-slate-300 hover:bg-slate-200'
+                                }`}
+                              >
+                                {isPresent ? `✓ ${tag} (ACTIVE)` : `+ ${tag}`}
+                              </button>
+                            );
+                          })}
                         </div>
                       </div>
 
