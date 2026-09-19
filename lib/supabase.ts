@@ -458,37 +458,75 @@ export async function deleteBooking(idOrRef: string): Promise<boolean> {
 }
 
 export async function getAdminSettings(): Promise<AdminSettings> {
+  let localSettings: Partial<AdminSettings> = {};
+  if (typeof window !== 'undefined') {
+    const local = localStorage.getItem('balamban_pickleball_admin_settings');
+    if (local) {
+      try {
+        localSettings = JSON.parse(local);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  }
+
+  let dbSettings: Partial<AdminSettings> = {};
   if (supabase) {
     try {
       const { data, error } = await supabase.from('settings').select('*').single();
       if (!error && data) {
-        return data as AdminSettings;
+        Object.keys(data).forEach((key) => {
+          if (data[key] !== null && data[key] !== undefined) {
+            (dbSettings as any)[key] = data[key];
+          }
+        });
       }
     } catch (err) {
       console.warn('Supabase settings error:', err);
     }
   }
 
-  if (typeof window !== 'undefined') {
-    const local = localStorage.getItem('balamban_pickleball_admin_settings');
-    return local ? JSON.parse(local) : DEFAULT_ADMIN_SETTINGS;
-  }
-  return DEFAULT_ADMIN_SETTINGS;
+  // Merge order: DEFAULT_ADMIN_SETTINGS < dbSettings < localSettings
+  // Local settings take final precedence so active/inactive toggles are NEVER erased on refresh
+  const merged: AdminSettings = {
+    ...DEFAULT_ADMIN_SETTINGS,
+    ...dbSettings,
+    ...localSettings
+  };
+
+  return merged;
 }
 
 export async function updateAdminSettings(settings: AdminSettings): Promise<boolean> {
+  // 1. ALWAYS store in localStorage first so local state is saved immediately & permanently
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('balamban_pickleball_admin_settings', JSON.stringify(settings));
+  }
+
+  // 2. Persist to Supabase DB if connected
   if (supabase) {
     try {
       const { error } = await supabase.from('settings').upsert([{ id: 'default', ...settings }]);
-      if (!error) return true;
+      if (error) {
+        console.warn('Supabase settings upsert warning (trying sanitized fallback):', error);
+        // Fallback: strip unknown column fields if table schema does not include new toggles
+        const sanitized: any = { id: 'default' };
+        const knownCols = [
+          'id', 'opening_hour', 'closing_hour', 'contact_phone', 'contact_email', 'contact_landline',
+          'location_address', 'gcash_number', 'gcash_name', 'qr_code_url', 'maya_number', 'maya_name',
+          'maya_qr_url', 'landbank_number', 'landbank_name', 'landbank_qr_url', 'hero_title', 'hero_subtitle'
+        ];
+        Object.keys(settings).forEach((k) => {
+          if (knownCols.includes(k)) {
+            sanitized[k] = (settings as any)[k];
+          }
+        });
+        await supabase.from('settings').upsert([sanitized]);
+      }
     } catch (err) {
       console.warn('Supabase update settings error:', err);
     }
   }
 
-  if (typeof window !== 'undefined') {
-    localStorage.setItem('balamban_pickleball_admin_settings', JSON.stringify(settings));
-    return true;
-  }
-  return false;
+  return true;
 }
