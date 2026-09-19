@@ -25,6 +25,7 @@ export default function OwnerPortalModal({ onClose, onCourtsUpdated }: OwnerPort
   const [loadingBookings, setLoadingBookings] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterDate, setFilterDate] = useState('');
+  const [selectedProofImage, setSelectedProofImage] = useState<string | null>(null);
 
   // Add Court Form state
   const [showAddCourtModal, setShowAddCourtModal] = useState(false);
@@ -560,7 +561,21 @@ export default function OwnerPortalModal({ onClose, onCourtsUpdated }: OwnerPort
                             </td>
                             <td className="p-3">
                               <span className="font-mono font-black text-slate-900 block">₱{b.total_amount}</span>
-                              <span className="text-[10px] bg-slate-100 px-2 py-0.5 rounded text-slate-700 font-bold border border-slate-200">{b.payment_method}</span>
+                              <div className="flex flex-col items-start gap-1 mt-0.5">
+                                <span className="text-[10px] bg-slate-100 px-2 py-0.5 rounded text-slate-700 font-bold border border-slate-200">{b.payment_method}</span>
+                                {b.payment_ref_no && (
+                                  <span className="text-[10px] text-slate-500 font-mono">Ref: {b.payment_ref_no}</span>
+                                )}
+                                {b.payment_proof_url && (
+                                  <button
+                                    onClick={() => setSelectedProofImage(b.payment_proof_url!)}
+                                    className="text-[10px] bg-lime-100 hover:bg-lime-200 text-lime-800 border border-lime-300 px-2 py-0.5 rounded font-bold flex items-center gap-1 transition mt-0.5"
+                                  >
+                                    <ImageIcon className="w-3 h-3" />
+                                    <span>View Proof Receipt</span>
+                                  </button>
+                                )}
+                              </div>
                             </td>
                             <td className="p-3">
                               <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
@@ -1672,6 +1687,41 @@ export default function OwnerPortalModal({ onClose, onCourtsUpdated }: OwnerPort
               </form>
             )}
           </>
+        )}
+
+        {/* Lightbox Modal for Payment Receipt Preview */}
+        {selectedProofImage && (
+          <div className="fixed inset-0 z-60 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-150">
+            <div className="relative max-w-2xl w-full bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl p-4 flex flex-col items-center">
+              <div className="w-full flex items-center justify-between pb-3 mb-2 border-b border-slate-800">
+                <div className="flex items-center space-x-2 text-lime-400 font-bold text-sm">
+                  <ImageIcon className="w-4 h-4" />
+                  <span>Customer Payment Receipt Proof</span>
+                </div>
+                <button
+                  onClick={() => setSelectedProofImage(null)}
+                  className="p-1.5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="max-h-[70vh] overflow-auto flex items-center justify-center rounded-2xl bg-black p-2 w-full">
+                <img
+                  src={selectedProofImage}
+                  alt="Payment Receipt Proof"
+                  className="max-w-full max-h-[65vh] object-contain rounded-xl"
+                />
+              </div>
+              <div className="w-full mt-3 flex justify-end">
+                <button
+                  onClick={() => setSelectedProofImage(null)}
+                  className="px-5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs"
+                >
+                  Close Receipt
+                </button>
+              </div>
+            </div>
+          </div>
         )}
 
       </div>

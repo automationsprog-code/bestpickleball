@@ -34,6 +34,8 @@ export interface Booking {
   payment_method: 'GCash' | 'Maya' | 'Landbank';
   payment_status: 'Pending' | 'Paid' | 'Verified';
   status: 'Confirmed' | 'Pending' | 'Completed' | 'Cancelled';
+  payment_proof_url?: string;
+  payment_ref_no?: string;
   notes?: string;
   created_at: string;
 }

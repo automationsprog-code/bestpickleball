@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Court, Booking, EquipmentRental, AdminSettings } from '@/lib/types';
 import { HOURLY_SLOTS, HourlySlot, DEFAULT_ADMIN_SETTINGS, generateHourlySlots } from '@/lib/data';
 import { getBookingsForDate, createBooking, getAdminSettings } from '@/lib/supabase';
-import { X, Calendar, Clock, CheckCircle2, QrCode, Ticket, Loader2 } from 'lucide-react';
+import { X, Calendar, Clock, CheckCircle2, QrCode, Ticket, Loader2, Upload, AlertCircle } from 'lucide-react';
 
 interface BookingModalProps {
   court: Court | null;
@@ -32,6 +32,10 @@ export default function BookingModal({ court, onClose, onBookingSuccess }: Booki
   const [customerPhone, setCustomerPhone] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<'GCash' | 'Maya' | 'Landbank'>('GCash');
   const [notes, setNotes] = useState('');
+
+  // Payment First Policy Proof state
+  const [paymentProofUrl, setPaymentProofUrl] = useState<string>('');
+  const [paymentRefNoInput, setPaymentRefNoInput] = useState<string>('');
 
   // Equipment add-ons
   const [paddleQty, setPaddleQty] = useState<number>(0);
@@ -104,10 +108,55 @@ export default function BookingModal({ court, onClose, onBookingSuccess }: Booki
   const coachPrice = coachAdded ? 300 : 0;
   const totalPrice = courtPrice + paddlePrice + ballPrice + coachPrice;
 
+  // Compress uploaded receipt proof image to lightweight JPEG Data URL (~80-120KB)
+  const handleProofImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const maxDim = 900;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > maxDim) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          }
+        } else {
+          if (height > maxDim) {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.75);
+          setPaymentProofUrl(compressedDataUrl);
+        }
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!customerName || !customerPhone) {
       alert('Palihug ibutang ang imong Pangalan ug Phone Number.');
+      return;
+    }
+
+    if (!paymentProofUrl) {
+      alert('Payment First Policy: Palihug i-scan ang QR Code ug i-upload ang screenshot/photo sa imong Payment Receipt sa dili pa i-confirm ang booking.');
       return;
     }
 
@@ -151,6 +200,8 @@ export default function BookingModal({ court, onClose, onBookingSuccess }: Booki
         payment_method: paymentMethod,
         payment_status: 'Paid',
         status: 'Confirmed',
+        payment_proof_url: paymentProofUrl,
+        payment_ref_no: paymentRefNoInput,
         notes
       };
 
@@ -436,8 +487,15 @@ export default function BookingModal({ court, onClose, onBookingSuccess }: Booki
               </div>
             </div>
 
-            {/* 5. Payment Option & Summary */}
-            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
+            {/* 5. Payment First Policy, QR Code & Proof Upload */}
+            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-4">
+              
+              {/* Payment First Notice Badge */}
+              <div className="bg-amber-50 border border-amber-300 p-3 rounded-2xl text-xs text-amber-900 font-bold flex items-center gap-2">
+                <AlertCircle className="w-5 h-5 text-amber-600 shrink-0" />
+                <span>PAYMENT FIRST POLICY: Palihug i-scan ang QR code sa ubos, bayri ang ₱{totalPrice}, ug i-upload ang screenshot sa Payment Receipt sa dili pa i-confirm ang slot.</span>
+              </div>
+
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-slate-800">Select Scan-to-Pay QR:</span>
                 <div className="flex items-center space-x-1.5">
@@ -465,6 +523,56 @@ export default function BookingModal({ court, onClose, onBookingSuccess }: Booki
                 </div>
               </div>
 
+              {/* Display selected QR Code image right inside form */}
+              <div className="bg-white p-3 rounded-2xl border border-slate-200 text-center space-y-2">
+                <p className="text-[11px] font-bold text-slate-700">
+                  Scan QR Code to Pay ₱{totalPrice} via {paymentMethod}:
+                </p>
+                <div className="w-36 h-36 bg-white p-1.5 rounded-xl mx-auto border-2 border-lime-500 shadow-sm overflow-hidden">
+                  <img
+                    src={
+                      paymentMethod === 'Maya' ? (adminSettings.maya_qr_url || adminSettings.qr_code_url) :
+                      paymentMethod === 'Landbank' ? (adminSettings.landbank_qr_url || adminSettings.qr_code_url) :
+                      adminSettings.qr_code_url
+                    }
+                    alt={`Official ${paymentMethod} Payment QR Code`}
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+              </div>
+
+              {/* Payment Proof File Upload (Required for Payment First Policy) */}
+              <div className="pt-2 border-t border-slate-200 space-y-3">
+                <label className="text-xs font-bold text-slate-900 block flex items-center gap-1">
+                  <span>Upload Payment Receipt / Proof Screenshot</span>
+                  <span className="text-rose-600 font-black">*</span>
+                </label>
+                <div className="flex items-center space-x-3">
+                  {paymentProofUrl && (
+                    <img src={paymentProofUrl} alt="Receipt Proof" className="w-16 h-16 rounded-xl object-cover border-2 border-lime-500 shadow-sm shrink-0" />
+                  )}
+                  <div className="flex-1 space-y-1">
+                    <label className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-lime-500 hover:bg-lime-600 text-slate-950 text-xs font-black cursor-pointer transition shadow-sm">
+                      <Upload className="w-4 h-4" />
+                      <span>{paymentProofUrl ? '✓ Receipt Attached (Change)' : 'Upload Payment Screenshot *'}</span>
+                      <input type="file" accept="image/*" onChange={handleProofImageUpload} className="hidden" />
+                    </label>
+                    <p className="text-[10px] text-slate-500 font-medium">I-upload ang imong GCash/Maya/Bank screenshot sa bayad.</p>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-[11px] text-slate-600 font-semibold block mb-1">Transaction Ref No. (Optional)</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 1029384756"
+                    value={paymentRefNoInput}
+                    onChange={(e) => setPaymentRefNoInput(e.target.value)}
+                    className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-mono font-bold text-slate-900 focus:outline-none focus:border-lime-600"
+                  />
+                </div>
+              </div>
+
               <div className="border-t border-slate-200 pt-2 flex items-center justify-between">
                 <div>
                   <p className="text-xs font-bold text-slate-900">Selected Slot & Total:</p>
@@ -480,7 +588,11 @@ export default function BookingModal({ court, onClose, onBookingSuccess }: Booki
             <button
               type="submit"
               disabled={submitting}
-              className="w-full py-4 rounded-2xl bg-lime-500 hover:bg-lime-600 text-slate-950 font-black text-sm tracking-wider transition-all shadow-lg shadow-lime-500/20 flex items-center justify-center gap-2"
+              className={`w-full py-4 rounded-2xl font-black text-sm tracking-wider transition-all shadow-lg flex items-center justify-center gap-2 ${
+                paymentProofUrl
+                  ? 'bg-lime-500 hover:bg-lime-600 text-slate-950 shadow-lime-500/20'
+                  : 'bg-amber-400 hover:bg-amber-500 text-slate-950'
+              }`}
             >
               {submitting ? (
                 <>
@@ -490,7 +602,9 @@ export default function BookingModal({ court, onClose, onBookingSuccess }: Booki
               ) : (
                 <>
                   <CheckCircle2 className="w-5 h-5" />
-                  <span>CONFIRM & BOOK SLOT (₱{totalPrice})</span>
+                  <span>
+                    {paymentProofUrl ? `CONFIRM & BOOK SLOT (₱${totalPrice})` : `PAY & UPLOAD RECEIPT TO BOOK (₱${totalPrice})`}
+                  </span>
                 </>
               )}
             </button>

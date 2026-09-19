@@ -269,6 +269,8 @@ function toDbBooking(b: Booking) {
     total_amount: b.total_amount,
     equipment_rentals: b.equipment_rentals || [],
     payment_method: b.payment_method || 'GCash',
+    payment_proof_url: b.payment_proof_url || '',
+    payment_ref_no: b.payment_ref_no || '',
     status: b.status || 'Confirmed',
     notes: b.notes || '',
     created_at: b.created_at || new Date().toISOString()
@@ -296,6 +298,8 @@ function fromDbBooking(dbItem: any): Booking {
     end_time: endTime,
     time_slot_label: dbItem.time_slot_label || `${format12(startTime)} - ${format12(endTime)}`,
     payment_status: dbItem.payment_status || 'Paid',
+    payment_proof_url: dbItem.payment_proof_url || undefined,
+    payment_ref_no: dbItem.payment_ref_no || undefined,
   };
 }
 
