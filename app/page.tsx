@@ -86,8 +86,17 @@ export default function Home() {
   });
 
   return (
-    <div className="bg-white min-h-screen text-slate-900 flex flex-col font-sans selection:bg-lime-500 selection:text-slate-950">
+    <div className="bg-white min-h-screen text-slate-900 flex flex-col font-sans selection:bg-lime-500 selection:text-slate-950 relative overflow-x-hidden">
       
+      {/* Official Full-Page Background Watermark Logo (Spans across entire site background) */}
+      <div className="fixed inset-0 flex items-center justify-center pointer-events-none opacity-[0.08] z-0 overflow-hidden select-none">
+        <img 
+          src="/logo.jpg" 
+          alt="Balamban BEST Inc. Watermark Background" 
+          className="w-[650px] sm:w-[950px] max-w-none h-[650px] sm:h-[950px] object-contain rounded-full mix-blend-multiply filter contrast-125"
+        />
+      </div>
+
       {/* Navbar Header */}
       <Navbar 
         onOpenMyBookings={() => setIsMyBookingsOpen(true)}
@@ -104,7 +113,7 @@ export default function Home() {
       />
 
       {/* Courts Selection Section */}
-      <section id="courts" className="py-14 px-4 sm:px-8 lg:px-12 max-w-[1600px] mx-auto w-full space-y-8 bg-white">
+      <section id="courts" className="py-14 px-4 sm:px-8 lg:px-12 max-w-[1600px] mx-auto w-full space-y-8 bg-white/90 relative z-10">
         
         {/* Section Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200 pb-6">
@@ -161,7 +170,7 @@ export default function Home() {
       </section>
 
       {/* Rates & Amenities Section */}
-      <section id="rates" className="py-14 px-4 sm:px-8 lg:px-12 bg-slate-50 border-y border-slate-200">
+      <section id="rates" className="py-14 px-4 sm:px-8 lg:px-12 bg-slate-50/80 backdrop-blur-xs border-y border-slate-200 relative z-10">
         <div className="max-w-[1600px] mx-auto space-y-8">
           <div className="text-center space-y-2 max-w-2xl mx-auto">
             <h2 className="text-2xl sm:text-3xl font-black text-slate-900">Why Play at BEST Inc. Balamban?</h2>
