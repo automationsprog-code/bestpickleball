@@ -53,7 +53,8 @@ export default function BookingModal({ court, onClose, onBookingSuccess }: Booki
       setAdminSettings(sets);
       const generated = generateHourlySlots(sets.opening_hour || 6, sets.closing_hour || 22);
       setAvailableSlots(generated);
-      if (generated.length > 0) setSelectedSlots([generated[0]]);
+      // Leave empty initially so booker must pick their own slot
+      setSelectedSlots([]);
     }
     loadInitialData();
   }, []);
@@ -78,13 +79,8 @@ export default function BookingModal({ court, onClose, onBookingSuccess }: Booki
           });
         setBookedSlots(slotsForThisCourt);
         
-        // Auto-select first available slot if current selection is booked
-        setSelectedSlots(prev => {
-          const valid = prev.filter(s => !slotsForThisCourt.some(bs => bs.includes(s.startTime) || bs.includes(s.label)));
-          if (valid.length > 0) return valid;
-          const firstAvail = availableSlots.find(s => !slotsForThisCourt.some(bs => bs.includes(s.startTime) || bs.includes(s.label)));
-          return firstAvail ? [firstAvail] : [];
-        });
+        // Remove any booked slots from user selection
+        setSelectedSlots(prev => prev.filter(s => !slotsForThisCourt.some(bs => bs.includes(s.startTime) || bs.includes(s.label))));
       } catch (err) {
         console.error('Failed to load slots:', err);
       } finally {
@@ -109,7 +105,6 @@ export default function BookingModal({ court, onClose, onBookingSuccess }: Booki
     setSelectedSlots(prev => {
       const exists = prev.some(s => s.id === slot.id);
       if (exists) {
-        if (prev.length === 1) return prev; // Keep at least 1 slot selected
         return prev.filter(s => s.id !== slot.id);
       } else {
         return [...prev, slot];
@@ -119,11 +114,11 @@ export default function BookingModal({ court, onClose, onBookingSuccess }: Booki
 
   // Sort selected slots chronologically
   const sortedSelectedSlots = [...selectedSlots].sort((a, b) => a.startTime.localeCompare(b.startTime));
-  const selectedSlotsCount = Math.max(1, sortedSelectedSlots.length);
+  const selectedSlotsCount = sortedSelectedSlots.length;
 
   // Formatted multi-slot label
   const selectedSlotsFormattedLabel = sortedSelectedSlots.length === 0
-    ? 'No slot selected'
+    ? 'Palihug pagpili og time slot'
     : sortedSelectedSlots.length === 1
     ? sortedSelectedSlots[0].label
     : `${sortedSelectedSlots.map(s => s.label).join(', ')} (${sortedSelectedSlots.length} Hours)`;

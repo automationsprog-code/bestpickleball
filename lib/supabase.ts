@@ -290,6 +290,18 @@ function fromDbBooking(dbItem: any): Booking {
     return `${h12}:00 ${ampm}`;
   };
 
+  // Parse proof URL / Ref No if embedded in notes
+  let proofUrl = dbItem.payment_proof_url;
+  let refNo = dbItem.payment_ref_no;
+  if (!proofUrl && dbItem.notes && typeof dbItem.notes === 'string' && dbItem.notes.includes('___PROOF___:')) {
+    const parts = dbItem.notes.split('___PROOF___:');
+    if (parts[1]) {
+      const proofParts = parts[1].split('___REF___:');
+      proofUrl = proofParts[0];
+      if (proofParts[1]) refNo = proofParts[1];
+    }
+  }
+
   return {
     ...dbItem,
     court_id: dbItem.court_id || '11111111-1111-1111-1111-111111111111',
@@ -298,8 +310,8 @@ function fromDbBooking(dbItem: any): Booking {
     end_time: endTime,
     time_slot_label: dbItem.time_slot_label || `${format12(startTime)} - ${format12(endTime)}`,
     payment_status: dbItem.payment_status || 'Paid',
-    payment_proof_url: dbItem.payment_proof_url || undefined,
-    payment_ref_no: dbItem.payment_ref_no || undefined,
+    payment_proof_url: proofUrl || undefined,
+    payment_ref_no: refNo || undefined,
   };
 }
 
@@ -325,17 +337,46 @@ export async function createBooking(newBooking: Omit<Booking, 'id' | 'created_at
     }
   }
 
-  // 2. Try inserting into Supabase with sanitized payload
+  // 2. Try inserting into Supabase with full payload, or fallback safe payload
   if (supabase) {
     try {
       const payload = toDbBooking(booking);
       const { data, error } = await supabase.from('bookings').insert([payload]).select().single();
       if (error) {
         console.warn('Supabase insert booking warning:', error);
-        if (error.code === '23503') {
-          const fallbackPayload = { ...payload, court_id: null };
-          const { data: fbData } = await supabase.from('bookings').insert([fallbackPayload]).select().single();
-          if (fbData) return fromDbBooking(fbData);
+        
+        // Safe fallback payload stripping custom SQL columns that might not exist in Supabase DB schema
+        let embeddedNotes = booking.notes || '';
+        if (booking.payment_proof_url) {
+          embeddedNotes += ` ___PROOF___:${booking.payment_proof_url}`;
+        }
+        if (booking.payment_ref_no) {
+          embeddedNotes += ` ___REF___:${booking.payment_ref_no}`;
+        }
+
+        const safePayload: any = {
+          id: booking.id,
+          reference_no: booking.reference_no,
+          court_id: (booking.court_id && booking.court_id.length > 20) ? booking.court_id : null,
+          customer_name: booking.customer_name,
+          customer_email: booking.customer_email || 'customer@example.com',
+          customer_phone: booking.customer_phone,
+          booking_date: booking.booking_date,
+          start_time: booking.start_time,
+          end_time: booking.end_time,
+          total_amount: booking.total_amount,
+          equipment_rentals: booking.equipment_rentals || [],
+          payment_method: booking.payment_method || 'GCash',
+          status: booking.status || 'Confirmed',
+          notes: embeddedNotes,
+          created_at: booking.created_at || new Date().toISOString()
+        };
+
+        const { data: fbData, error: fbErr } = await supabase.from('bookings').insert([safePayload]).select().single();
+        if (fbData) {
+          return fromDbBooking(fbData);
+        } else if (fbErr) {
+          console.warn('Fallback insert error:', fbErr);
         }
       } else if (data) {
         return fromDbBooking(data);
