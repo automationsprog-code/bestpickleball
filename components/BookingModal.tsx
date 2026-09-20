@@ -64,23 +64,40 @@ export default function BookingModal({ court, onClose, onBookingSuccess }: Booki
       setLoadingSlots(true);
       try {
         const bookings = await getBookingsForDate(selectedDate);
-        const slotsForThisCourt = bookings
-          .filter(b => !b.court_id || b.court_id === court?.id || (b.court_name && court?.name && b.court_name === court?.name))
-          .flatMap(b => {
-            const list: string[] = [];
-            if (b.start_time) {
-              list.push(b.start_time);
-              list.push(b.start_time.substring(0, 5));
+        const bookedSlotsList: string[] = [];
+
+        availableSlots.forEach(slot => {
+          const slotStartNum = parseInt(slot.startTime.replace(':', ''), 10);
+
+          const isTaken = bookings.some(b => {
+            const isSameCourt = !b.court_id || b.court_id === court?.id || (b.court_name && court?.name && b.court_name === court?.name);
+            if (!isSameCourt) return false;
+
+            // 1. Exact startTime match or time_slot_label contains slot.label or slot.startTime
+            if (b.start_time && b.start_time.substring(0, 5) === slot.startTime) return true;
+            if (b.time_slot_label && (b.time_slot_label.includes(slot.label) || b.time_slot_label.includes(slot.startTime))) return true;
+
+            // 2. Time range overlap check (e.g. b from 18:00 to 24:00 covers 18:00, 19:00, 20:00, 21:00, 22:00, 23:00)
+            if (b.start_time && b.end_time) {
+              const bStartNum = parseInt(b.start_time.substring(0, 5).replace(':', ''), 10);
+              let bEndNum = parseInt(b.end_time.substring(0, 5).replace(':', ''), 10);
+              if (bEndNum === 0) bEndNum = 2400; // Midnight 00:00 is 2400
+              if (slotStartNum >= bStartNum && slotStartNum < bEndNum) return true;
             }
-            if (b.time_slot_label) {
-              list.push(b.time_slot_label);
-            }
-            return list;
+
+            return false;
           });
-        setBookedSlots(slotsForThisCourt);
+
+          if (isTaken) {
+            bookedSlotsList.push(slot.startTime);
+            bookedSlotsList.push(slot.label);
+          }
+        });
+
+        setBookedSlots(bookedSlotsList);
         
         // Remove any booked slots from user selection
-        setSelectedSlots(prev => prev.filter(s => !slotsForThisCourt.some(bs => bs.includes(s.startTime) || bs.includes(s.label))));
+        setSelectedSlots(prev => prev.filter(s => !bookedSlotsList.includes(s.startTime) && !bookedSlotsList.includes(s.label)));
       } catch (err) {
         console.error('Failed to load slots:', err);
       } finally {
@@ -235,25 +252,8 @@ export default function BookingModal({ court, onClose, onBookingSuccess }: Booki
         notes: notes || `Multi-slot reservation (${sortedSelectedSlots.length} hrs)`
       };
 
-      // Create main booking
+      // Create single main booking record
       const created = await createBooking(mainBookingData);
-
-      // Lock secondary slots if multi-selected
-      if (sortedSelectedSlots.length > 1) {
-        for (let i = 1; i < sortedSelectedSlots.length; i++) {
-          const subSlot = sortedSelectedSlots[i];
-          await createBooking({
-            ...mainBookingData,
-            reference_no: `${refNo}-${i + 1}`,
-            time_slot_label: subSlot.label,
-            start_time: subSlot.startTime,
-            end_time: subSlot.endTime,
-            total_amount: 0,
-            equipment_rentals: [],
-            notes: `Slot lock for multi-hour reservation ${refNo}`
-          });
-        }
-      }
 
       setConfirmedBooking(created);
       onBookingSuccess(created);

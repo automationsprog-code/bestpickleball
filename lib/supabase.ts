@@ -427,15 +427,22 @@ export async function getAllUserBookings(): Promise<Booking[]> {
       }
     });
 
-    const syncedBookings = remoteBookings.map(rb => {
-      const key = rb.reference_no || rb.id;
-      const localVer = localMap.get(key);
-      return {
-        ...rb,
-        payment_proof_url: rb.payment_proof_url || localVer?.payment_proof_url,
-        payment_ref_no: rb.payment_ref_no || localVer?.payment_ref_no
-      };
-    });
+    const syncedBookings = remoteBookings
+      .filter(b => {
+        if (!b) return false;
+        if (b.reference_no && b.reference_no.match(/-\d+$/)) return false;
+        if (b.total_amount === 0 && b.notes && b.notes.includes('Slot lock')) return false;
+        return true;
+      })
+      .map(rb => {
+        const key = rb.reference_no || rb.id;
+        const localVer = localMap.get(key);
+        return {
+          ...rb,
+          payment_proof_url: rb.payment_proof_url || localVer?.payment_proof_url,
+          payment_ref_no: rb.payment_ref_no || localVer?.payment_ref_no
+        };
+      });
 
     // Sync localStorage so deletions on another device immediately update local storage
     if (typeof window !== 'undefined') {
@@ -449,7 +456,12 @@ export async function getAllUserBookings(): Promise<Booking[]> {
     return syncedBookings;
   }
 
-  return localBookings;
+  return localBookings.filter(b => {
+    if (!b) return false;
+    if (b.reference_no && b.reference_no.match(/-\d+$/)) return false;
+    if (b.total_amount === 0 && b.notes && b.notes.includes('Slot lock')) return false;
+    return true;
+  });
 }
 
 export async function getBookingsForDate(date: string): Promise<Booking[]> {
