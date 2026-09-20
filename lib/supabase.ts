@@ -390,7 +390,7 @@ export async function createBooking(newBooking: Omit<Booking, 'id' | 'created_at
 }
 
 export async function getAllUserBookings(): Promise<Booking[]> {
-  // 1. Read local bookings first
+  // 1. Read local bookings first for fallback or image data preservation
   let localBookings: Booking[] = [];
   if (typeof window !== 'undefined') {
     const local = localStorage.getItem('balamban_pickleball_bookings');
@@ -418,47 +418,38 @@ export async function getAllUserBookings(): Promise<Booking[]> {
     }
   }
 
-  // 2. Merge local + remote bookings without losing locally saved reservations
-  const bookingMap = new Map<string, Booking>();
-
-  // Add local bookings to map
-  localBookings.forEach(b => {
-    if (b && (b.reference_no || b.id)) {
-      bookingMap.set(b.reference_no || b.id, b);
-    }
-  });
-
-  // Merge remote bookings
+  // 2. When Supabase is connected, Cloud DB is the authoritative source across all devices
   if (isRemoteConnected) {
-    remoteBookings.forEach(b => {
+    const localMap = new Map<string, Booking>();
+    localBookings.forEach(b => {
       if (b && (b.reference_no || b.id)) {
-        const key = b.reference_no || b.id;
-        const existing = bookingMap.get(key);
-        bookingMap.set(key, {
-          ...b,
-          payment_proof_url: b.payment_proof_url || existing?.payment_proof_url,
-          payment_ref_no: b.payment_ref_no || existing?.payment_ref_no,
-        });
+        localMap.set(b.reference_no || b.id, b);
       }
     });
-  }
 
-  const allCombined = Array.from(bookingMap.values()).sort((a, b) => {
-    const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
-    const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
-    return dateB - dateA;
-  });
+    const syncedBookings = remoteBookings.map(rb => {
+      const key = rb.reference_no || rb.id;
+      const localVer = localMap.get(key);
+      return {
+        ...rb,
+        payment_proof_url: rb.payment_proof_url || localVer?.payment_proof_url,
+        payment_ref_no: rb.payment_ref_no || localVer?.payment_ref_no
+      };
+    });
 
-  // 3. Update localStorage with merged list
-  if (typeof window !== 'undefined' && allCombined.length > 0) {
-    try {
-      localStorage.setItem('balamban_pickleball_bookings', JSON.stringify(allCombined));
-    } catch (e) {
-      console.error(e);
+    // Sync localStorage so deletions on another device immediately update local storage
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('balamban_pickleball_bookings', JSON.stringify(syncedBookings));
+      } catch (e) {
+        console.error(e);
+      }
     }
+
+    return syncedBookings;
   }
 
-  return allCombined.length > 0 ? allCombined : localBookings;
+  return localBookings;
 }
 
 export async function getBookingsForDate(date: string): Promise<Booking[]> {
@@ -498,7 +489,7 @@ export async function deleteBooking(idOrRef: string): Promise<boolean> {
       const local = localStorage.getItem('balamban_pickleball_bookings');
       if (local) {
         const existing: Booking[] = JSON.parse(local);
-        const filtered = existing.filter(b => b.id !== idOrRef && b.reference_no !== idOrRef);
+        const filtered = existing.filter(b => b.id !== idOrRef && b.reference_no !== idOrRef && !b.reference_no?.startsWith(`${idOrRef}-`));
         localStorage.setItem('balamban_pickleball_bookings', JSON.stringify(filtered));
       }
     } catch (e) {
@@ -506,10 +497,11 @@ export async function deleteBooking(idOrRef: string): Promise<boolean> {
     }
   }
 
-  // 2. Delete from Supabase DB
+  // 2. Delete from Supabase DB (including any sub-slot records)
   if (supabase) {
     try {
       await supabase.from('bookings').delete().or(`id.eq.${idOrRef},reference_no.eq.${idOrRef}`);
+      await supabase.from('bookings').delete().ilike('reference_no', `${idOrRef}%`);
     } catch (err) {
       console.warn('Supabase delete booking error:', err);
     }
