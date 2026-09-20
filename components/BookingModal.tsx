@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Court, Booking, EquipmentRental, AdminSettings } from '@/lib/types';
 import { HOURLY_SLOTS, HourlySlot, DEFAULT_ADMIN_SETTINGS, generateHourlySlots } from '@/lib/data';
 import { getBookingsForDate, createBooking, getAdminSettings } from '@/lib/supabase';
-import { X, Calendar, Clock, CheckCircle2, QrCode, Ticket, Loader2, Upload, AlertCircle } from 'lucide-react';
+import { X, Calendar, Clock, CheckCircle2, QrCode, Ticket, Loader2, Upload, AlertCircle, Maximize2 } from 'lucide-react';
 
 interface BookingModalProps {
   court: Court | null;
@@ -21,10 +21,11 @@ export default function BookingModal({ court, onClose, onBookingSuccess }: Booki
   const [adminSettings, setAdminSettings] = useState<AdminSettings>(DEFAULT_ADMIN_SETTINGS);
   const [availableSlots, setAvailableSlots] = useState<HourlySlot[]>(HOURLY_SLOTS);
   const [selectedDate, setSelectedDate] = useState<string>(todayStr);
-  const [selectedSlot, setSelectedSlot] = useState<HourlySlot>(HOURLY_SLOTS[0] || HOURLY_SLOTS[2]);
+  const [selectedSlots, setSelectedSlots] = useState<HourlySlot[]>([]);
   const [bookedSlots, setBookedSlots] = useState<string[]>([]);
   const [loadingSlots, setLoadingSlots] = useState<boolean>(false);
   const [submitting, setSubmitting] = useState<boolean>(false);
+  const [showQrModal, setShowQrModal] = useState<boolean>(false);
 
   // Customer info
   const [customerName, setCustomerName] = useState('');
@@ -52,7 +53,7 @@ export default function BookingModal({ court, onClose, onBookingSuccess }: Booki
       setAdminSettings(sets);
       const generated = generateHourlySlots(sets.opening_hour || 6, sets.closing_hour || 22);
       setAvailableSlots(generated);
-      if (generated.length > 0) setSelectedSlot(generated[0]);
+      if (generated.length > 0) setSelectedSlots([generated[0]]);
     }
     loadInitialData();
   }, []);
@@ -77,11 +78,13 @@ export default function BookingModal({ court, onClose, onBookingSuccess }: Booki
           });
         setBookedSlots(slotsForThisCourt);
         
-        // Auto-select first available slot if taken
-        if (slotsForThisCourt.includes(selectedSlot.startTime) || slotsForThisCourt.includes(selectedSlot.label)) {
-          const firstAvail = availableSlots.find(s => !slotsForThisCourt.includes(s.startTime) && !slotsForThisCourt.includes(s.label));
-          if (firstAvail) setSelectedSlot(firstAvail);
-        }
+        // Auto-select first available slot if current selection is booked
+        setSelectedSlots(prev => {
+          const valid = prev.filter(s => !slotsForThisCourt.some(bs => bs.includes(s.startTime) || bs.includes(s.label)));
+          if (valid.length > 0) return valid;
+          const firstAvail = availableSlots.find(s => !slotsForThisCourt.some(bs => bs.includes(s.startTime) || bs.includes(s.label)));
+          return firstAvail ? [firstAvail] : [];
+        });
       } catch (err) {
         console.error('Failed to load slots:', err);
       } finally {
@@ -101,8 +104,32 @@ export default function BookingModal({ court, onClose, onBookingSuccess }: Booki
     return { dateStr, dayName, dayNum, isToday: i === 0 };
   });
 
-  // Calculate pricing
-  const courtPrice = court.hourly_rate;
+  // Toggle multi-selection slot
+  const handleToggleSlot = (slot: HourlySlot) => {
+    setSelectedSlots(prev => {
+      const exists = prev.some(s => s.id === slot.id);
+      if (exists) {
+        if (prev.length === 1) return prev; // Keep at least 1 slot selected
+        return prev.filter(s => s.id !== slot.id);
+      } else {
+        return [...prev, slot];
+      }
+    });
+  };
+
+  // Sort selected slots chronologically
+  const sortedSelectedSlots = [...selectedSlots].sort((a, b) => a.startTime.localeCompare(b.startTime));
+  const selectedSlotsCount = Math.max(1, sortedSelectedSlots.length);
+
+  // Formatted multi-slot label
+  const selectedSlotsFormattedLabel = sortedSelectedSlots.length === 0
+    ? 'No slot selected'
+    : sortedSelectedSlots.length === 1
+    ? sortedSelectedSlots[0].label
+    : `${sortedSelectedSlots.map(s => s.label).join(', ')} (${sortedSelectedSlots.length} Hours)`;
+
+  // Calculate pricing with multi-slot multiplier
+  const courtPrice = court.hourly_rate * selectedSlotsCount;
   const paddlePrice = paddleQty * 50;
   const ballPrice = ballQty * 30;
   const coachPrice = coachAdded ? 300 : 0;
@@ -155,6 +182,11 @@ export default function BookingModal({ court, onClose, onBookingSuccess }: Booki
       return;
     }
 
+    if (sortedSelectedSlots.length === 0) {
+      alert('Palihug pagpili og bisan unsang time slot.');
+      return;
+    }
+
     if (!paymentProofUrl) {
       alert('Payment First Policy: Palihug i-scan ang QR Code ug i-upload ang screenshot/photo sa imong Payment Receipt sa dili pa i-confirm ang booking.');
       return;
@@ -163,17 +195,20 @@ export default function BookingModal({ court, onClose, onBookingSuccess }: Booki
     setSubmitting(true);
 
     try {
-      // Double booking safety check: re-verify if slot is already booked in DB
+      // Re-verify if any selected slot is already taken in DB
       const freshBookings = await getBookingsForDate(selectedDate);
-      const isSlotAlreadyTaken = freshBookings.some(b => {
-        const isSameCourt = !b.court_id || b.court_id === court.id || (b.court_name && b.court_name === court.name);
-        const isSameSlot = (b.start_time && b.start_time.substring(0, 5) === selectedSlot.startTime) || b.time_slot_label === selectedSlot.label;
-        return isSameCourt && isSameSlot;
+      const takenSlot = sortedSelectedSlots.find(slot => {
+        return freshBookings.some(b => {
+          const isSameCourt = !b.court_id || b.court_id === court.id || (b.court_name && b.court_name === court.name);
+          const isSameSlot = (b.start_time && b.start_time.substring(0, 5) === slot.startTime) || (b.time_slot_label && b.time_slot_label.includes(slot.label));
+          return isSameCourt && isSameSlot;
+        });
       });
 
-      if (isSlotAlreadyTaken) {
-        alert(`Dili na pwede i-book kining orasa! Naa na'y nag-book sa ${selectedSlot.label}. Palihug sa pagpili og laing oras.`);
-        setBookedSlots(prev => Array.from(new Set([...prev, selectedSlot.startTime, selectedSlot.label])));
+      if (takenSlot) {
+        alert(`Dili na pwede i-book kining orasa! Naa na'y nag-book sa ${takenSlot.label}. Palihug sa pagpili og laing oras.`);
+        setBookedSlots(prev => Array.from(new Set([...prev, takenSlot.startTime, takenSlot.label])));
+        setSubmitting(false);
         return;
       }
 
@@ -184,7 +219,7 @@ export default function BookingModal({ court, onClose, onBookingSuccess }: Booki
 
       const refNo = `BEST-PKL-${Math.floor(1000 + Math.random() * 9000)}`;
 
-      const newBookingData: Omit<Booking, 'id' | 'created_at'> = {
+      const mainBookingData: Omit<Booking, 'id' | 'created_at'> = {
         reference_no: refNo,
         court_id: court.id,
         court_name: court.name,
@@ -192,9 +227,9 @@ export default function BookingModal({ court, onClose, onBookingSuccess }: Booki
         customer_email: customerEmail || 'customer@balamban.ph',
         customer_phone: customerPhone,
         booking_date: selectedDate,
-        time_slot_label: selectedSlot.label,
-        start_time: selectedSlot.startTime,
-        end_time: selectedSlot.endTime,
+        time_slot_label: selectedSlotsFormattedLabel,
+        start_time: sortedSelectedSlots[0].startTime,
+        end_time: sortedSelectedSlots[sortedSelectedSlots.length - 1].endTime,
         total_amount: totalPrice,
         equipment_rentals: rentals,
         payment_method: paymentMethod,
@@ -202,10 +237,29 @@ export default function BookingModal({ court, onClose, onBookingSuccess }: Booki
         status: 'Confirmed',
         payment_proof_url: paymentProofUrl,
         payment_ref_no: paymentRefNoInput,
-        notes
+        notes: notes || `Multi-slot reservation (${sortedSelectedSlots.length} hrs)`
       };
 
-      const created = await createBooking(newBookingData);
+      // Create main booking
+      const created = await createBooking(mainBookingData);
+
+      // Lock secondary slots if multi-selected
+      if (sortedSelectedSlots.length > 1) {
+        for (let i = 1; i < sortedSelectedSlots.length; i++) {
+          const subSlot = sortedSelectedSlots[i];
+          await createBooking({
+            ...mainBookingData,
+            reference_no: `${refNo}-${i + 1}`,
+            time_slot_label: subSlot.label,
+            start_time: subSlot.startTime,
+            end_time: subSlot.endTime,
+            total_amount: 0,
+            equipment_rentals: [],
+            notes: `Slot lock for multi-hour reservation ${refNo}`
+          });
+        }
+      }
+
       setConfirmedBooking(created);
       onBookingSuccess(created);
     } catch (err) {
@@ -215,6 +269,11 @@ export default function BookingModal({ court, onClose, onBookingSuccess }: Booki
       setSubmitting(false);
     }
   };
+
+  const activeQrUrl = 
+    paymentMethod === 'Maya' ? (adminSettings.maya_qr_url || adminSettings.qr_code_url) :
+    paymentMethod === 'Landbank' ? (adminSettings.landbank_qr_url || adminSettings.qr_code_url) :
+    adminSettings.qr_code_url;
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
@@ -236,7 +295,7 @@ export default function BookingModal({ court, onClose, onBookingSuccess }: Booki
 
           <button
             onClick={onClose}
-            className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200 transition"
+            className="p-1.5 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 transition"
           >
             <X className="w-5 h-5" />
           </button>
@@ -266,40 +325,50 @@ export default function BookingModal({ court, onClose, onBookingSuccess }: Booki
                 <strong className="text-slate-900">{court.name} ({confirmedBooking.booking_date})</strong>
               </div>
               <div className="flex justify-between border-b border-slate-200 pb-2">
-                <span className="text-slate-500 font-medium">Time Slot:</span>
-                <span className="font-bold text-lime-800 font-mono">{confirmedBooking.time_slot_label}</span>
+                <span className="text-slate-500 font-medium">Time Slot(s):</span>
+                <span className="font-bold text-lime-800 font-mono text-right">{confirmedBooking.time_slot_label}</span>
               </div>
               <div className="flex justify-between border-b border-slate-200 pb-2">
                 <span className="text-slate-500 font-medium">Payment Method:</span>
                 <span className="font-semibold text-slate-800">{confirmedBooking.payment_method} QR</span>
               </div>
               <div className="flex justify-between text-base font-black pt-1">
-                <span className="text-slate-800">Total Amount:</span>
+                <span className="text-slate-800">Total Amount Paid:</span>
                 <span className="text-lime-700">₱{confirmedBooking.total_amount}</span>
               </div>
             </div>
 
-            {/* Admin QR Code Scan-to-Pay Container */}
-            <div className="bg-blue-50/80 border border-blue-200 p-5 rounded-2xl text-center space-y-3">
-              <div className="flex items-center justify-center gap-2 text-blue-700 font-bold text-xs">
+            {/* Large QR Code Container */}
+            <div className="bg-blue-50/80 border border-blue-200 p-4 sm:p-5 rounded-3xl text-center space-y-3">
+              <div className="flex items-center justify-center gap-2 text-blue-800 font-black text-xs uppercase tracking-wide">
                 <QrCode className="w-4 h-4" />
-                <span>Scan QR Code to Pay via {confirmedBooking.payment_method}</span>
+                <span>{confirmedBooking.payment_method} Scan-to-Pay QR</span>
               </div>
 
-              <div className="w-44 h-44 bg-white p-2.5 rounded-2xl mx-auto shadow-md border-2 border-lime-500 overflow-hidden">
+              <div 
+                onClick={() => setShowQrModal(true)}
+                className="w-full max-w-[280px] sm:max-w-[320px] aspect-square bg-white p-3 rounded-2xl mx-auto shadow-lg border-4 border-lime-500 overflow-hidden cursor-pointer hover:scale-102 transition flex items-center justify-center relative group"
+              >
                 <img
-                  src={
-                    confirmedBooking.payment_method === 'Maya' ? (adminSettings.maya_qr_url || adminSettings.qr_code_url) :
-                    confirmedBooking.payment_method === 'Landbank' ? (adminSettings.landbank_qr_url || adminSettings.qr_code_url) :
-                    adminSettings.qr_code_url
-                  }
+                  src={activeQrUrl}
                   alt={`Official ${confirmedBooking.payment_method} Payment QR Code`}
-                  className="w-full h-full object-contain"
+                  className="w-full h-full object-contain rounded-xl"
                 />
+                <div className="absolute inset-0 bg-slate-950/25 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white text-xs font-bold gap-1 rounded-xl backdrop-blur-[1px]">
+                  <Maximize2 className="w-4 h-4" />
+                  <span>Click to View Full Screen QR</span>
+                </div>
               </div>
 
               <div>
-                <p className="text-[11px] text-slate-600 mt-1 font-medium">Palihug i-send ang <strong>₱{confirmedBooking.total_amount}</strong> ug i-pakita ang Ref No. inig abot sa venue.</p>
+                <button
+                  type="button"
+                  onClick={() => setShowQrModal(true)}
+                  className="text-xs text-lime-800 font-extrabold bg-lime-100 hover:bg-lime-200 border border-lime-300 px-3 py-1.5 rounded-xl transition inline-flex items-center gap-1.5 shadow-xs"
+                >
+                  <Maximize2 className="w-3.5 h-3.5" />
+                  <span>🔍 TAP TO ENLARGE QR CODE</span>
+                </button>
               </div>
             </div>
 
@@ -318,7 +387,7 @@ export default function BookingModal({ court, onClose, onBookingSuccess }: Booki
             <div>
               <label className="text-xs font-bold text-slate-800 mb-2 flex items-center gap-1.5">
                 <Calendar className="w-4 h-4 text-lime-600" />
-                1. Select Reservation Date:
+                <span>1. Select Reservation Date:</span>
               </label>
 
               <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
@@ -340,32 +409,35 @@ export default function BookingModal({ court, onClose, onBookingSuccess }: Booki
               </div>
             </div>
 
-            {/* 2. Time Slot Selector (Per Hour) */}
+            {/* 2. Time Slot Selector (Multi-Selection Supported!) */}
             <div>
-              <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center justify-between mb-1">
                 <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                   <Clock className="w-4 h-4 text-lime-600" />
-                  2. Select Hourly Time Slot (Booked slots are disabled):
+                  <span>2. Select Time Slot (Multi-Selection Allowed):</span>
                 </label>
                 {loadingSlots && <span className="text-[11px] text-lime-700 flex items-center gap-1 font-bold"><Loader2 className="w-3 h-3 animate-spin" /> Checking slots...</span>}
               </div>
+              <p className="text-[11px] text-slate-500 font-medium mb-2.5">
+                💡 Pinduta ang 1 o labaw pa nga oras aron maka-book og sunod-sunod nga mga slot (e.g. 3-4 PM, 4-5 PM, 5-6 PM).
+              </p>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {availableSlots.map((slot) => {
-                  const isBooked = bookedSlots.includes(slot.startTime) || bookedSlots.includes(`${slot.startTime}:00`) || bookedSlots.includes(slot.label);
-                  const isSelected = selectedSlot.startTime === slot.startTime;
+                  const isBooked = bookedSlots.some(bs => bs.includes(slot.startTime) || bs.includes(slot.label));
+                  const isSelected = selectedSlots.some(s => s.id === slot.id);
 
                   return (
                     <button
                       key={slot.id}
                       type="button"
                       disabled={isBooked}
-                      onClick={() => setSelectedSlot(slot)}
+                      onClick={() => handleToggleSlot(slot)}
                       className={`p-2.5 rounded-xl text-xs font-semibold text-left transition-all border ${
                         isBooked
                           ? 'bg-rose-50/80 border-rose-200 text-rose-500 line-through cursor-not-allowed font-medium opacity-60'
                           : isSelected
-                          ? 'bg-lime-500 text-slate-950 border-lime-600 shadow-sm font-extrabold'
+                          ? 'bg-lime-500 text-slate-950 border-lime-600 shadow-sm font-extrabold ring-2 ring-lime-400'
                           : 'bg-slate-50 border-slate-200 text-slate-800 hover:border-lime-500'
                       }`}
                     >
@@ -373,7 +445,7 @@ export default function BookingModal({ court, onClose, onBookingSuccess }: Booki
                       <div className={`text-[10px] font-bold mt-0.5 ${
                         isBooked ? 'text-rose-600 font-extrabold' : isSelected ? 'text-slate-950 font-black' : 'text-emerald-700'
                       }`}>
-                        {isBooked ? '❌ TAKEN / BOOKED' : '✅ AVAILABLE'}
+                        {isBooked ? '❌ TAKEN / BOOKED' : isSelected ? '✓ SELECTED' : '✅ AVAILABLE'}
                       </div>
                     </button>
                   );
@@ -487,8 +559,8 @@ export default function BookingModal({ court, onClose, onBookingSuccess }: Booki
               </div>
             </div>
 
-            {/* 5. Payment First Policy, QR Code & Proof Upload */}
-            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-4">
+            {/* 5. Payment First Policy, Large QR Code & Proof Upload */}
+            <div className="bg-slate-50 p-4 rounded-3xl border border-slate-200 space-y-4">
               
               {/* Payment First Notice Badge */}
               <div className="bg-amber-50 border border-amber-300 p-3 rounded-2xl text-xs text-amber-900 font-bold flex items-center gap-2">
@@ -523,22 +595,45 @@ export default function BookingModal({ court, onClose, onBookingSuccess }: Booki
                 </div>
               </div>
 
-              {/* Display selected QR Code image right inside form */}
-              <div className="bg-white p-3 rounded-2xl border border-slate-200 text-center space-y-2">
-                <p className="text-[11px] font-bold text-slate-700">
-                  Scan QR Code to Pay ₱{totalPrice} via {paymentMethod}:
-                </p>
-                <div className="w-36 h-36 bg-white p-1.5 rounded-xl mx-auto border-2 border-lime-500 shadow-sm overflow-hidden">
-                  <img
-                    src={
-                      paymentMethod === 'Maya' ? (adminSettings.maya_qr_url || adminSettings.qr_code_url) :
-                      paymentMethod === 'Landbank' ? (adminSettings.landbank_qr_url || adminSettings.qr_code_url) :
-                      adminSettings.qr_code_url
-                    }
-                    alt={`Official ${paymentMethod} Payment QR Code`}
-                    className="w-full h-full object-contain"
-                  />
+              {/* Large Display selected QR Code image */}
+              <div className="bg-white p-4 rounded-3xl border border-slate-200 text-center space-y-3 shadow-xs">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-black text-slate-800 uppercase tracking-wide">
+                    Scan QR Code to Pay ₱{totalPrice} via {paymentMethod}:
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setShowQrModal(true)}
+                    className="text-[11px] font-bold text-lime-800 bg-lime-100 hover:bg-lime-200 px-2.5 py-1 rounded-lg border border-lime-300 transition flex items-center gap-1"
+                  >
+                    <Maximize2 className="w-3.5 h-3.5" />
+                    <span>Enlarge QR</span>
+                  </button>
                 </div>
+
+                <div 
+                  onClick={() => setShowQrModal(true)}
+                  className="w-full max-w-[280px] sm:max-w-[320px] aspect-square bg-white p-3 rounded-2xl mx-auto shadow-md border-4 border-lime-500 overflow-hidden cursor-pointer hover:scale-102 transition flex items-center justify-center relative group"
+                >
+                  <img
+                    src={activeQrUrl}
+                    alt={`Official ${paymentMethod} Payment QR Code`}
+                    className="w-full h-full object-contain rounded-xl"
+                  />
+                  <div className="absolute inset-0 bg-slate-950/20 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white text-xs font-bold gap-1 rounded-xl backdrop-blur-[1px]">
+                    <Maximize2 className="w-4 h-4" />
+                    <span>Click to View Full Screen QR</span>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setShowQrModal(true)}
+                  className="text-xs text-lime-800 font-extrabold bg-lime-100 hover:bg-lime-200 border border-lime-300 px-3.5 py-1.5 rounded-xl transition inline-flex items-center gap-1.5 shadow-xs"
+                >
+                  <Maximize2 className="w-3.5 h-3.5" />
+                  <span>🔍 TAP / CLICK TO ENLARGE QR CODE</span>
+                </button>
               </div>
 
               {/* Payment Proof File Upload (Required for Payment First Policy) */}
@@ -574,11 +669,11 @@ export default function BookingModal({ court, onClose, onBookingSuccess }: Booki
               </div>
 
               <div className="border-t border-slate-200 pt-2 flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-bold text-slate-900">Selected Slot & Total:</p>
-                  <p className="text-[11px] text-lime-700 font-extrabold">{selectedSlot.label}</p>
+                <div className="pr-2">
+                  <p className="text-xs font-bold text-slate-900">Selected Slot(s) ({selectedSlotsCount} hr{selectedSlotsCount > 1 ? 's' : ''}):</p>
+                  <p className="text-[11px] text-lime-700 font-extrabold">{selectedSlotsFormattedLabel}</p>
                 </div>
-                <div className="text-xl font-black text-lime-700 font-mono">
+                <div className="text-xl font-black text-lime-700 font-mono shrink-0">
                   ₱{totalPrice}
                 </div>
               </div>
@@ -610,6 +705,48 @@ export default function BookingModal({ court, onClose, onBookingSuccess }: Booki
             </button>
 
           </form>
+        )}
+
+        {/* Lightbox Modal for Large High-Res QR Code Preview */}
+        {showQrModal && (
+          <div className="fixed inset-0 z-60 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-150">
+            <div className="relative max-w-lg w-full bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl p-6 flex flex-col items-center text-center space-y-4">
+              <div className="w-full flex items-center justify-between border-b border-slate-800 pb-3">
+                <div className="flex items-center space-x-2 text-lime-400 font-black text-sm">
+                  <QrCode className="w-5 h-5" />
+                  <span>Official {paymentMethod} Scan-to-Pay QR</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowQrModal(false)}
+                  className="p-1.5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="bg-white p-4 rounded-3xl border-4 border-lime-500 w-full max-w-[340px] aspect-square flex items-center justify-center shadow-2xl">
+                <img
+                  src={activeQrUrl}
+                  alt="High Res QR Code"
+                  className="w-full h-full object-contain rounded-xl"
+                />
+              </div>
+
+              <div className="text-slate-300 text-xs font-semibold space-y-1">
+                <p className="font-bold text-white text-sm">Total Amount to Pay: ₱{totalPrice}</p>
+                <p className="text-[11px] text-slate-400">Pahinumdom: screenshot kini nga dako nga QR code para dali ra ma-scan sa Maya, GCash, o Bank App gallery upload.</p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowQrModal(false)}
+                className="w-full py-3 rounded-xl bg-lime-500 hover:bg-lime-600 text-slate-950 font-black text-xs tracking-wider transition shadow-md"
+              >
+                DONE / CLOSE QR
+              </button>
+            </div>
+          </div>
         )}
 
       </div>

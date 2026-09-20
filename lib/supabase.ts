@@ -349,21 +349,18 @@ export async function createBooking(newBooking: Omit<Booking, 'id' | 'created_at
 }
 
 export async function getAllUserBookings(): Promise<Booking[]> {
-  const courts = await getCourts();
-  // Filter for courts that are active (is_active !== false)
-  const activeCourtIds = new Set(
-    courts.filter(c => c.is_active !== false && (c.is_active as any) !== 'false').map(c => c.id)
-  );
-  const activeCourtNames = new Set(
-    courts.filter(c => c.is_active !== false && (c.is_active as any) !== 'false').map(c => c.name.toLowerCase().trim())
-  );
-
-  const isBookingForActiveCourt = (b: Booking) => {
-    if (!b.court_id && !b.court_name) return false;
-    if (b.court_id && activeCourtIds.has(b.court_id)) return true;
-    if (b.court_name && activeCourtNames.has(b.court_name.toLowerCase().trim())) return true;
-    return false;
-  };
+  // 1. Read local bookings first
+  let localBookings: Booking[] = [];
+  if (typeof window !== 'undefined') {
+    const local = localStorage.getItem('balamban_pickleball_bookings');
+    if (local) {
+      try {
+        localBookings = JSON.parse(local);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  }
 
   let remoteBookings: Booking[] = [];
   let isRemoteConnected = false;
@@ -372,7 +369,7 @@ export async function getAllUserBookings(): Promise<Booking[]> {
     try {
       const { data, error } = await supabase.from('bookings').select('*').order('created_at', { ascending: false });
       if (!error && data) {
-        remoteBookings = data.map(fromDbBooking).filter(isBookingForActiveCourt);
+        remoteBookings = data.map(fromDbBooking);
         isRemoteConnected = true;
       }
     } catch (err) {
@@ -380,28 +377,47 @@ export async function getAllUserBookings(): Promise<Booking[]> {
     }
   }
 
-  // When Supabase Cloud DB is connected, it is 100% the SINGLE SOURCE OF TRUTH across all devices!
+  // 2. Merge local + remote bookings without losing locally saved reservations
+  const bookingMap = new Map<string, Booking>();
+
+  // Add local bookings to map
+  localBookings.forEach(b => {
+    if (b && (b.reference_no || b.id)) {
+      bookingMap.set(b.reference_no || b.id, b);
+    }
+  });
+
+  // Merge remote bookings
   if (isRemoteConnected) {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('balamban_pickleball_bookings', JSON.stringify(remoteBookings));
-    }
-    return remoteBookings;
-  }
-
-  // Fallback ONLY when Supabase is completely unconfigured/offline
-  let localBookings: Booking[] = [];
-  if (typeof window !== 'undefined') {
-    const local = localStorage.getItem('balamban_pickleball_bookings');
-    if (local) {
-      try {
-        localBookings = JSON.parse(local).filter(isBookingForActiveCourt);
-      } catch (e) {
-        console.error(e);
+    remoteBookings.forEach(b => {
+      if (b && (b.reference_no || b.id)) {
+        const key = b.reference_no || b.id;
+        const existing = bookingMap.get(key);
+        bookingMap.set(key, {
+          ...b,
+          payment_proof_url: b.payment_proof_url || existing?.payment_proof_url,
+          payment_ref_no: b.payment_ref_no || existing?.payment_ref_no,
+        });
       }
+    });
+  }
+
+  const allCombined = Array.from(bookingMap.values()).sort((a, b) => {
+    const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+    const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+    return dateB - dateA;
+  });
+
+  // 3. Update localStorage with merged list
+  if (typeof window !== 'undefined' && allCombined.length > 0) {
+    try {
+      localStorage.setItem('balamban_pickleball_bookings', JSON.stringify(allCombined));
+    } catch (e) {
+      console.error(e);
     }
   }
 
-  return localBookings;
+  return allCombined.length > 0 ? allCombined : localBookings;
 }
 
 export async function getBookingsForDate(date: string): Promise<Booking[]> {
