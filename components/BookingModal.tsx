@@ -333,38 +333,9 @@ export default function BookingModal({ court, onClose, onBookingSuccess }: Booki
               </div>
             </div>
 
-            {/* Large QR Code Container */}
-            <div className="bg-blue-50/80 border border-blue-200 p-4 sm:p-5 rounded-3xl text-center space-y-3">
-              <div className="flex items-center justify-center gap-2 text-blue-800 font-black text-xs uppercase tracking-wide">
-                <QrCode className="w-4 h-4" />
-                <span>{confirmedBooking.payment_method} Scan-to-Pay QR</span>
-              </div>
-
-              <div 
-                onClick={() => setShowQrModal(true)}
-                className="w-full max-w-[280px] sm:max-w-[320px] aspect-square bg-white p-3 rounded-2xl mx-auto shadow-lg border-4 border-lime-500 overflow-hidden cursor-pointer hover:scale-102 transition flex items-center justify-center relative group"
-              >
-                <img
-                  src={activeQrUrl}
-                  alt={`Official ${confirmedBooking.payment_method} Payment QR Code`}
-                  className="w-full h-full object-contain rounded-xl"
-                />
-                <div className="absolute inset-0 bg-slate-950/25 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white text-xs font-bold gap-1 rounded-xl backdrop-blur-[1px]">
-                  <Maximize2 className="w-4 h-4" />
-                  <span>Click to View Full Screen QR</span>
-                </div>
-              </div>
-
-              <div>
-                <button
-                  type="button"
-                  onClick={() => setShowQrModal(true)}
-                  className="text-xs text-lime-800 font-extrabold bg-lime-100 hover:bg-lime-200 border border-lime-300 px-3 py-1.5 rounded-xl transition inline-flex items-center gap-1.5 shadow-xs"
-                >
-                  <Maximize2 className="w-3.5 h-3.5" />
-                  <span>🔍 TAP TO ENLARGE QR CODE</span>
-                </button>
-              </div>
+            <div className="bg-emerald-50 border border-emerald-200 p-3.5 rounded-2xl text-xs text-emerald-900 font-bold flex items-center justify-center gap-2 text-center">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span>Na-received na ang imong payment receipt proof. Daghang salamat!</span>
             </div>
 
             <button
