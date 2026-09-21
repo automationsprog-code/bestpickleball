@@ -566,14 +566,16 @@ export default function OwnerPortalModal({ onClose, onCourtsUpdated }: OwnerPort
                                 {b.payment_ref_no && (
                                   <span className="text-[10px] text-slate-500 font-mono">Ref: {b.payment_ref_no}</span>
                                 )}
-                                {b.payment_proof_url && (
+                                {b.payment_proof_url ? (
                                   <button
                                     onClick={() => setSelectedProofImage(b.payment_proof_url!)}
-                                    className="text-[10px] bg-lime-100 hover:bg-lime-200 text-lime-800 border border-lime-300 px-2 py-0.5 rounded font-bold flex items-center gap-1 transition mt-0.5"
+                                    className="text-[10px] bg-lime-500 hover:bg-lime-600 text-slate-950 border border-lime-600 px-2 py-1 rounded-lg font-black flex items-center gap-1 transition mt-1 shadow-xs"
                                   >
-                                    <ImageIcon className="w-3 h-3" />
-                                    <span>View Proof Receipt</span>
+                                    <ImageIcon className="w-3.5 h-3.5 text-slate-950" />
+                                    <span>View Payment Receipt</span>
                                   </button>
+                                ) : (
+                                  <span className="text-[10px] text-slate-400 italic block mt-0.5">No receipt uploaded</span>
                                 )}
                               </div>
                             </td>

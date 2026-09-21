@@ -304,7 +304,7 @@ function toDbBooking(b: Booking, targetCourtId?: string) {
   if (b.payment_ref_no && !cleanNotes.includes('Ref:')) {
     cleanNotes += ` (Ref: ${b.payment_ref_no})`;
   }
-  if (b.payment_proof_url && b.payment_proof_url.startsWith('http') && !cleanNotes.includes('___PROOF___:')) {
+  if (b.payment_proof_url && !cleanNotes.includes('___PROOF___:')) {
     cleanNotes += ` ___PROOF___:${b.payment_proof_url}___REF___:${b.payment_ref_no || ''}`;
   }
 
@@ -323,7 +323,7 @@ function toDbBooking(b: Booking, targetCourtId?: string) {
     equipment_rentals: b.equipment_rentals || [],
     payment_method: b.payment_method || 'GCash',
     status: b.status || 'Confirmed',
-    notes: cleanNotes.substring(0, 500),
+    notes: cleanNotes,
     created_at: b.created_at || new Date().toISOString()
   };
 }
