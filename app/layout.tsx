@@ -16,6 +16,16 @@ export const metadata: Metadata = {
   title: "bestpickleball | Court Booking sa Balamban, Cebu",
   description: "Official Pickleball Court Booking Platform for Balamban Extensive Skills and Technology, Inc. (BEST Inc.) sa Balamban, Cebu.",
   keywords: ["bestpickleball", "pickleball balamban", "best inc pickleball", "pickleball cebu court booking"],
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/icon.png", type: "image/png", sizes: "512x512" },
+    ],
+    apple: [
+      { url: "/apple-icon.png", sizes: "180x180", type: "image/png" },
+    ],
+  },
 };
 
 export default function RootLayout({
