@@ -73,12 +73,19 @@ export default function BookingModal({ court, onClose, onBookingSuccess }: Booki
             const isSameCourt = !b.court_id || b.court_id === court?.id || (b.court_name && court?.name && b.court_name === court?.name);
             if (!isSameCourt) return false;
 
-            // 1. Exact startTime match or time_slot_label contains slot.label or slot.startTime
-            if (b.start_time && b.start_time.substring(0, 5) === slot.startTime) return true;
-            if (b.time_slot_label && (b.time_slot_label.includes(slot.label) || b.time_slot_label.includes(slot.startTime))) return true;
+            // 1. Check if time_slot_label contains slot.label or slot.startTime or slot 12h start label
+            if (b.time_slot_label) {
+              if (b.time_slot_label.includes(slot.label)) return true;
+              if (b.time_slot_label.includes(slot.startTime)) return true;
+              const slot12Start = slot.label.split(' - ')[0]; // e.g. "7:00 AM"
+              if (b.time_slot_label.includes(slot12Start)) return true;
+            }
 
-            // 2. Time range overlap check (e.g. b from 18:00 to 24:00 covers 18:00, 19:00, 20:00, 21:00, 22:00, 23:00)
-            if (b.start_time && b.end_time) {
+            // 2. Exact start time match
+            if (b.start_time && b.start_time.substring(0, 5) === slot.startTime) return true;
+
+            // 3. Contiguous time range overlap check (ONLY if time_slot_label is single/continuous without commas)
+            if (b.start_time && b.end_time && (!b.time_slot_label || !b.time_slot_label.includes(','))) {
               const bStartNum = parseInt(b.start_time.substring(0, 5).replace(':', ''), 10);
               let bEndNum = parseInt(b.end_time.substring(0, 5).replace(':', ''), 10);
               if (bEndNum === 0) bEndNum = 2400; // Midnight 00:00 is 2400
