@@ -437,9 +437,7 @@ export async function createBooking(newBooking: Omit<Booking, 'id' | 'created_at
 }
 
 export async function getAllUserBookings(): Promise<Booking[]> {
-  const deletedIds = getDeletedBookingIds();
-
-  // 1. Read local bookings first for fallback or image data preservation
+  // 1. Read local storage cache for offline fallback
   let localBookings: Booking[] = [];
   if (typeof window !== 'undefined') {
     const local = localStorage.getItem('balamban_pickleball_bookings');
@@ -452,85 +450,39 @@ export async function getAllUserBookings(): Promise<Booking[]> {
     }
   }
 
-  let remoteBookings: Booking[] = [];
-  let isRemoteConnected = false;
-
+  // 2. Fetch directly from Supabase Cloud DB (the authoritative single source of truth)
   if (supabase) {
     try {
       const { data, error } = await supabase.from('bookings').select('*').order('created_at', { ascending: false });
-      if (!error && data) {
-        remoteBookings = data.map(fromDbBooking);
-        isRemoteConnected = true;
+      if (!error && data !== null) {
+        const remoteBookings = data
+          .map(fromDbBooking)
+          .filter(b => {
+            if (!b) return false;
+            // Filter out sub-slot locks (reference_no ending with -1, -2 etc. where split length > 3)
+            if (b.reference_no && b.reference_no.split('-').length > 3) return false;
+            if (b.total_amount === 0 && b.notes && b.notes.includes('Slot lock')) return false;
+            return true;
+          });
+
+        // Save fresh remote bookings to localStorage for offline fallback
+        if (typeof window !== 'undefined') {
+          try {
+            localStorage.setItem('balamban_pickleball_bookings', JSON.stringify(remoteBookings));
+          } catch (e) {
+            console.error(e);
+          }
+        }
+
+        return remoteBookings;
       }
     } catch (err) {
       console.warn('Supabase fetch all bookings error:', err);
     }
   }
 
-  // 2. Merge local + remote bookings (Supabase Cloud DB is single source of truth when connected)
-  const bookingMap = new Map<string, Booking>();
-
-  if (isRemoteConnected) {
-    // Remote bookings from Supabase Cloud DB take precedence across all devices
-    remoteBookings.forEach(rb => {
-      if (rb && (rb.reference_no || rb.id)) {
-        const key = rb.reference_no || rb.id;
-        if (!deletedIds.includes(rb.id) && !deletedIds.includes(rb.reference_no)) {
-          const localVer = localBookings.find(l => l.id === rb.id || l.reference_no === rb.reference_no);
-          bookingMap.set(key, {
-            ...rb,
-            payment_proof_url: rb.payment_proof_url || localVer?.payment_proof_url,
-            payment_ref_no: rb.payment_ref_no || localVer?.payment_ref_no
-          });
-        }
-      }
-    });
-
-    // Only keep local bookings created on this device within the last 30 seconds (pending DB sync)
-    const now = Date.now();
-    localBookings.forEach(lb => {
-      if (lb && (lb.reference_no || lb.id)) {
-        const key = lb.reference_no || lb.id;
-        if (!bookingMap.has(key) && !deletedIds.includes(lb.id) && !deletedIds.includes(lb.reference_no)) {
-          const createdTime = lb.created_at ? new Date(lb.created_at).getTime() : 0;
-          if (now - createdTime < 30000) {
-            bookingMap.set(key, lb);
-          }
-        }
-      }
-    });
-  } else {
-    // Fallback when offline
-    localBookings.forEach(b => {
-      if (b && (b.reference_no || b.id)) {
-        const key = b.reference_no || b.id;
-        if (!deletedIds.includes(b.id) && !deletedIds.includes(b.reference_no)) {
-          bookingMap.set(key, b);
-        }
-      }
-    });
-  }
-
-  const mergedList = Array.from(bookingMap.values())
-    .filter(b => {
-      if (!b) return false;
-      if (deletedIds.includes(b.id) || deletedIds.includes(b.reference_no)) return false;
-      if (b.reference_no && b.reference_no.split('-').length > 3) return false;
-      if (b.total_amount === 0 && b.notes && b.notes.includes('Slot lock')) return false;
-      return true;
-    })
-    .sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
-
-  // Save merged list back to localStorage so user bookings persist reliably
-  if (typeof window !== 'undefined') {
-    try {
-      localStorage.setItem('balamban_pickleball_bookings', JSON.stringify(mergedList));
-    } catch (e) {
-      console.error(e);
-    }
-  }
-
-  return isRemoteConnected ? mergedList : localBookings.filter(b => !deletedIds.includes(b.id) && !deletedIds.includes(b.reference_no));
+  // Fallback ONLY when offline (no internet / Supabase unreachable)
+  return localBookings.filter(b => b && (!b.reference_no || b.reference_no.split('-').length <= 3));
 }
 
 export async function getBookingsForDate(date: string): Promise<Booking[]> {
