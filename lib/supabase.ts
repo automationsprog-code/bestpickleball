@@ -530,7 +530,7 @@ export async function getAllUserBookings(): Promise<Booking[]> {
     .filter(b => {
       if (!b) return false;
       if (deletedIds.includes(b.id) || deletedIds.includes(b.reference_no)) return false;
-      if (b.reference_no && b.reference_no.match(/-\d+$/)) return false;
+      if (b.reference_no && b.reference_no.split('-').length > 3) return false;
       if (b.total_amount === 0 && b.notes && b.notes.includes('Slot lock')) return false;
       return true;
     })
