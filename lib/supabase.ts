@@ -298,6 +298,9 @@ export async function updateCourtStatus(id: string, is_active: boolean): Promise
 
 function toDbBooking(b: Booking, targetCourtId?: string) {
   let cleanNotes = b.notes || '';
+  if (b.time_slot_label && !cleanNotes.includes('___SLOT___:')) {
+    cleanNotes += ` ___SLOT___:${b.time_slot_label}`;
+  }
   if (b.payment_ref_no && !cleanNotes.includes('Ref:')) {
     cleanNotes += ` (Ref: ${b.payment_ref_no})`;
   }
@@ -305,6 +308,7 @@ function toDbBooking(b: Booking, targetCourtId?: string) {
     cleanNotes += ` ___PROOF___:${b.payment_proof_url}___REF___:${b.payment_ref_no || ''}`;
   }
 
+  // Exact 15 columns matching live Supabase PostgreSQL schema
   return {
     id: b.id,
     reference_no: b.reference_no,
@@ -313,13 +317,11 @@ function toDbBooking(b: Booking, targetCourtId?: string) {
     customer_email: b.customer_email || 'customer@example.com',
     customer_phone: b.customer_phone,
     booking_date: b.booking_date,
-    time_slot_label: b.time_slot_label || '8:00 AM - 9:00 AM',
     start_time: b.start_time,
     end_time: b.end_time,
     total_amount: b.total_amount,
     equipment_rentals: b.equipment_rentals || [],
     payment_method: b.payment_method || 'GCash',
-    payment_status: b.payment_status || 'Paid',
     status: b.status || 'Confirmed',
     notes: cleanNotes.substring(0, 500),
     created_at: b.created_at || new Date().toISOString()
@@ -339,15 +341,25 @@ function fromDbBooking(dbItem: any): Booking {
     return `${h12}:00 ${ampm}`;
   };
 
-  // Parse proof URL / Ref No if embedded in notes
+  let slotLabel = dbItem.time_slot_label;
   let proofUrl = dbItem.payment_proof_url;
   let refNo = dbItem.payment_ref_no;
-  if (!proofUrl && dbItem.notes && typeof dbItem.notes === 'string' && dbItem.notes.includes('___PROOF___:')) {
-    const parts = dbItem.notes.split('___PROOF___:');
-    if (parts[1]) {
-      const proofParts = parts[1].split('___REF___:');
-      proofUrl = proofParts[0];
-      if (proofParts[1]) refNo = proofParts[1];
+
+  if (dbItem.notes && typeof dbItem.notes === 'string') {
+    if (!slotLabel && dbItem.notes.includes('___SLOT___:')) {
+      const parts = dbItem.notes.split('___SLOT___:');
+      if (parts[1]) {
+        slotLabel = parts[1].split('___PROOF___:')[0].split(' (Ref:')[0].trim();
+      }
+    }
+
+    if (!proofUrl && dbItem.notes.includes('___PROOF___:')) {
+      const parts = dbItem.notes.split('___PROOF___:');
+      if (parts[1]) {
+        const proofParts = parts[1].split('___REF___:');
+        proofUrl = proofParts[0];
+        if (proofParts[1]) refNo = proofParts[1];
+      }
     }
   }
 
@@ -357,7 +369,7 @@ function fromDbBooking(dbItem: any): Booking {
     court_name: dbItem.court_name || 'Court 1',
     start_time: startTime,
     end_time: endTime,
-    time_slot_label: dbItem.time_slot_label || `${format12(startTime)} - ${format12(endTime)}`,
+    time_slot_label: slotLabel || `${format12(startTime)} - ${format12(endTime)}`,
     payment_status: dbItem.payment_status || 'Paid',
     payment_proof_url: proofUrl || undefined,
     payment_ref_no: refNo || undefined,
