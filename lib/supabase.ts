@@ -467,26 +467,16 @@ export async function getAllUserBookings(): Promise<Booking[]> {
     }
   }
 
-  // 2. Merge local + remote bookings without losing any saved user reservations
+  // 2. Merge local + remote bookings (Supabase Cloud DB is single source of truth when connected)
   const bookingMap = new Map<string, Booking>();
 
-  // Add local bookings first (excluding locally deleted ones)
-  localBookings.forEach(b => {
-    if (b && (b.reference_no || b.id)) {
-      const key = b.reference_no || b.id;
-      if (!deletedIds.includes(b.id) && !deletedIds.includes(b.reference_no)) {
-        bookingMap.set(key, b);
-      }
-    }
-  });
-
-  // Enrich / add remote bookings from Supabase Cloud DB
   if (isRemoteConnected) {
+    // Remote bookings from Supabase Cloud DB take precedence across all devices
     remoteBookings.forEach(rb => {
       if (rb && (rb.reference_no || rb.id)) {
         const key = rb.reference_no || rb.id;
         if (!deletedIds.includes(rb.id) && !deletedIds.includes(rb.reference_no)) {
-          const localVer = bookingMap.get(key);
+          const localVer = localBookings.find(l => l.id === rb.id || l.reference_no === rb.reference_no);
           bookingMap.set(key, {
             ...rb,
             payment_proof_url: rb.payment_proof_url || localVer?.payment_proof_url,
@@ -496,34 +486,29 @@ export async function getAllUserBookings(): Promise<Booking[]> {
       }
     });
 
-    // Auto-sync any local bookings missing from Supabase Cloud DB
-    if (localBookings.length > 0) {
-      try {
-        const activeCourts = await getCourts();
-        const fallbackCourtId = activeCourts.length > 0 ? activeCourts[0].id : '11111111-1111-1111-1111-111111111111';
-
-        localBookings.forEach(async (lb) => {
-          if (lb && (lb.reference_no || lb.id)) {
-            const existsInRemote = remoteBookings.some(rb => rb.id === lb.id || rb.reference_no === lb.reference_no);
-            const isDeleted = deletedIds.includes(lb.id) || deletedIds.includes(lb.reference_no);
-
-            if (!existsInRemote && !isDeleted) {
-              try {
-                const targetCourtId = activeCourts.some(c => c.id === lb.court_id) ? lb.court_id : fallbackCourtId;
-                const dbPayload = toDbBooking(lb, targetCourtId);
-                if (supabase) {
-                  await supabase.from('bookings').insert([dbPayload]);
-                }
-              } catch (e) {
-                console.warn('Auto sync local booking error:', e);
-              }
-            }
+    // Only keep local bookings created on this device within the last 30 seconds (pending DB sync)
+    const now = Date.now();
+    localBookings.forEach(lb => {
+      if (lb && (lb.reference_no || lb.id)) {
+        const key = lb.reference_no || lb.id;
+        if (!bookingMap.has(key) && !deletedIds.includes(lb.id) && !deletedIds.includes(lb.reference_no)) {
+          const createdTime = lb.created_at ? new Date(lb.created_at).getTime() : 0;
+          if (now - createdTime < 30000) {
+            bookingMap.set(key, lb);
           }
-        });
-      } catch (e) {
-        console.warn('Auto sync check error:', e);
+        }
       }
-    }
+    });
+  } else {
+    // Fallback when offline
+    localBookings.forEach(b => {
+      if (b && (b.reference_no || b.id)) {
+        const key = b.reference_no || b.id;
+        if (!deletedIds.includes(b.id) && !deletedIds.includes(b.reference_no)) {
+          bookingMap.set(key, b);
+        }
+      }
+    });
   }
 
   const mergedList = Array.from(bookingMap.values())
