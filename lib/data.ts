@@ -38,6 +38,42 @@ export function generateHourlySlots(startHour: number = 6, endHour: number = 24)
 
 export const HOURLY_SLOTS: HourlySlot[] = generateHourlySlots(6, 24);
 
+export function isSlotTakenByBooking(slot: HourlySlot, b: Booking, courtId?: string, courtName?: string): boolean {
+  if (courtId || courtName) {
+    const isSameCourt = !b.court_id || b.court_id === courtId || (b.court_name && courtName && b.court_name === courtName);
+    if (!isSameCourt) return false;
+  }
+
+  const slotStartNum = parseInt(slot.startTime.replace(':', ''), 10);
+  let slotEndNum = parseInt(slot.endTime.replace(':', ''), 10);
+  if (slotEndNum === 0) slotEndNum = 2400;
+
+  if (b.time_slot_label && b.time_slot_label.includes(',')) {
+    const parts = b.time_slot_label.split(',').map(p => p.trim());
+    return parts.some(part => part.includes(slot.label));
+  }
+
+  if (b.start_time && b.end_time) {
+    const bStartNum = parseInt(b.start_time.substring(0, 5).replace(':', ''), 10);
+    let bEndNum = parseInt(b.end_time.substring(0, 5).replace(':', ''), 10);
+    if (bEndNum === 0) bEndNum = 2400;
+
+    if (!isNaN(bStartNum) && !isNaN(bEndNum) && bEndNum > bStartNum) {
+      return slotStartNum < bEndNum && slotEndNum > bStartNum;
+    }
+  }
+
+  if (b.time_slot_label && b.time_slot_label.includes(slot.label)) {
+    return true;
+  }
+
+  if (b.start_time && b.start_time.substring(0, 5) === slot.startTime) {
+    return true;
+  }
+
+  return false;
+}
+
 export function formatSelectedSlotsLabel(sortedSlots: HourlySlot[]): string {
   if (sortedSlots.length === 0) return 'Palihug pagpili og time slot';
   if (sortedSlots.length === 1) return sortedSlots[0].label;

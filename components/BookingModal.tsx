@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Court, Booking, EquipmentRental, AdminSettings } from '@/lib/types';
-import { HOURLY_SLOTS, HourlySlot, DEFAULT_ADMIN_SETTINGS, generateHourlySlots, formatSelectedSlotsLabel } from '@/lib/data';
+import { HOURLY_SLOTS, HourlySlot, DEFAULT_ADMIN_SETTINGS, generateHourlySlots, formatSelectedSlotsLabel, isSlotTakenByBooking } from '@/lib/data';
 import { getBookingsForDate, createBooking, getAdminSettings } from '@/lib/supabase';
 import { X, Calendar, Clock, CheckCircle2, QrCode, Ticket, Loader2, Upload, AlertCircle, Maximize2 } from 'lucide-react';
 
@@ -34,14 +34,14 @@ export default function BookingModal({ court, onClose, onBookingSuccess }: Booki
   const [paymentMethod, setPaymentMethod] = useState<'GCash' | 'Maya' | 'Landbank'>('GCash');
   const [notes, setNotes] = useState('');
 
-  // Payment First Policy Proof state
+  // Equipment rental state
+  const [paddleQty, setPaddleQty] = useState(0);
+  const [ballQty, setBallQty] = useState(0);
+  const [coachAdded, setCoachAdded] = useState(false);
+
+  // Receipt image upload
   const [paymentProofUrl, setPaymentProofUrl] = useState<string>('');
   const [paymentRefNoInput, setPaymentRefNoInput] = useState<string>('');
-
-  // Equipment add-ons
-  const [paddleQty, setPaddleQty] = useState<number>(0);
-  const [ballQty, setBallQty] = useState<number>(0);
-  const [coachAdded, setCoachAdded] = useState<boolean>(false);
 
   // Confirmation view
   const [confirmedBooking, setConfirmedBooking] = useState<Booking | null>(null);
@@ -67,33 +67,7 @@ export default function BookingModal({ court, onClose, onBookingSuccess }: Booki
         const bookedSlotsList: string[] = [];
 
         availableSlots.forEach(slot => {
-          const slotStartNum = parseInt(slot.startTime.replace(':', ''), 10);
-
-          const isTaken = bookings.some(b => {
-            const isSameCourt = !b.court_id || b.court_id === court?.id || (b.court_name && court?.name && b.court_name === court?.name);
-            if (!isSameCourt) return false;
-
-            // 1. Check if time_slot_label contains slot.label or slot.startTime or slot 12h start label
-            if (b.time_slot_label) {
-              if (b.time_slot_label.includes(slot.label)) return true;
-              if (b.time_slot_label.includes(slot.startTime)) return true;
-              const slot12Start = slot.label.split(' - ')[0]; // e.g. "7:00 AM"
-              if (b.time_slot_label.includes(slot12Start)) return true;
-            }
-
-            // 2. Exact start time match
-            if (b.start_time && b.start_time.substring(0, 5) === slot.startTime) return true;
-
-            // 3. Contiguous time range overlap check (ONLY if time_slot_label is single/continuous without commas)
-            if (b.start_time && b.end_time && (!b.time_slot_label || !b.time_slot_label.includes(','))) {
-              const bStartNum = parseInt(b.start_time.substring(0, 5).replace(':', ''), 10);
-              let bEndNum = parseInt(b.end_time.substring(0, 5).replace(':', ''), 10);
-              if (bEndNum === 0) bEndNum = 2400; // Midnight 00:00 is 2400
-              if (slotStartNum >= bStartNum && slotStartNum < bEndNum) return true;
-            }
-
-            return false;
-          });
+          const isTaken = bookings.some(b => isSlotTakenByBooking(slot, b, court?.id, court?.name));
 
           if (isTaken) {
             bookedSlotsList.push(slot.startTime);
@@ -213,11 +187,7 @@ export default function BookingModal({ court, onClose, onBookingSuccess }: Booki
       // Re-verify if any selected slot is already taken in DB
       const freshBookings = await getBookingsForDate(selectedDate);
       const takenSlot = sortedSelectedSlots.find(slot => {
-        return freshBookings.some(b => {
-          const isSameCourt = !b.court_id || b.court_id === court.id || (b.court_name && b.court_name === court.name);
-          const isSameSlot = (b.start_time && b.start_time.substring(0, 5) === slot.startTime) || (b.time_slot_label && b.time_slot_label.includes(slot.label));
-          return isSameCourt && isSameSlot;
-        });
+        return freshBookings.some(b => isSlotTakenByBooking(slot, b, court.id, court.name));
       });
 
       if (takenSlot) {
