@@ -71,14 +71,13 @@ export default function BookingModal({ court, onClose, onBookingSuccess }: Booki
 
           if (isTaken) {
             bookedSlotsList.push(slot.startTime);
-            bookedSlotsList.push(slot.label);
           }
         });
 
         setBookedSlots(bookedSlotsList);
         
         // Remove any booked slots from user selection
-        setSelectedSlots(prev => prev.filter(s => !bookedSlotsList.includes(s.startTime) && !bookedSlotsList.includes(s.label)));
+        setSelectedSlots(prev => prev.filter(s => !bookedSlotsList.includes(s.startTime)));
       } catch (err) {
         console.error('Failed to load slots:', err);
       } finally {
@@ -192,7 +191,7 @@ export default function BookingModal({ court, onClose, onBookingSuccess }: Booki
 
       if (takenSlot) {
         alert(`Dili na pwede i-book kining orasa! Naa na'y nag-book sa ${takenSlot.label}. Palihug sa pagpili og laing oras.`);
-        setBookedSlots(prev => Array.from(new Set([...prev, takenSlot.startTime, takenSlot.label])));
+        setBookedSlots(prev => Array.from(new Set([...prev, takenSlot.startTime])));
         setSubmitting(false);
         return;
       }
@@ -363,7 +362,7 @@ export default function BookingModal({ court, onClose, onBookingSuccess }: Booki
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {availableSlots.map((slot) => {
-                  const isBooked = bookedSlots.some(bs => bs.includes(slot.startTime) || bs.includes(slot.label));
+                  const isBooked = bookedSlots.includes(slot.startTime);
                   const isSelected = selectedSlots.some(s => s.id === slot.id);
 
                   return (
