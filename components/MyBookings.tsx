@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Booking } from '@/lib/types';
-import { getAllUserBookings } from '@/lib/supabase';
+import { getAllUserBookings, supabase } from '@/lib/supabase';
 import { formatDisplayTimeSlot } from '@/lib/data';
 import { Ticket, Calendar, X, RefreshCw } from 'lucide-react';
 
@@ -29,6 +29,20 @@ export default function MyBookings({ onClose, onNewBookingClick }: MyBookingsPro
 
   useEffect(() => {
     fetchBookings();
+
+    const client = supabase;
+    if (client) {
+      const channel = client
+        .channel('realtime-my-bookings-modal')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings' }, () => {
+          fetchBookings();
+        })
+        .subscribe();
+
+      return () => {
+        client.removeChannel(channel);
+      };
+    }
   }, []);
 
   return (
