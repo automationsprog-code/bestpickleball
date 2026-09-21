@@ -38,6 +38,59 @@ export function generateHourlySlots(startHour: number = 6, endHour: number = 24)
 
 export const HOURLY_SLOTS: HourlySlot[] = generateHourlySlots(6, 24);
 
+export function formatSelectedSlotsLabel(sortedSlots: HourlySlot[]): string {
+  if (sortedSlots.length === 0) return 'Palihug pagpili og time slot';
+  if (sortedSlots.length === 1) return sortedSlots[0].label;
+
+  let isContinuous = true;
+  for (let i = 0; i < sortedSlots.length - 1; i++) {
+    if (sortedSlots[i].endTime !== sortedSlots[i + 1].startTime) {
+      isContinuous = false;
+      break;
+    }
+  }
+
+  if (isContinuous) {
+    const startLabel = sortedSlots[0].label.split(' - ')[0];
+    const endLabel = sortedSlots[sortedSlots.length - 1].label.split(' - ')[1];
+    return `${startLabel} - ${endLabel} (${sortedSlots.length} Hours)`;
+  } else {
+    return `${sortedSlots.map(s => s.label).join(', ')} (${sortedSlots.length} Hours)`;
+  }
+}
+
+export function formatDisplayTimeSlot(timeSlotLabel?: string, startTime?: string, endTime?: string): string {
+  if (!timeSlotLabel && !startTime) return '';
+
+  if (timeSlotLabel && !timeSlotLabel.includes(',')) {
+    return timeSlotLabel;
+  }
+
+  const format12 = (timeStr: string) => {
+    const [hStr] = timeStr.split(':');
+    let h = parseInt(hStr, 10);
+    if (isNaN(h)) return timeStr;
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const h12 = h % 12 === 0 ? 12 : h % 12;
+    return `${h12}:00 ${ampm}`;
+  };
+
+  if (startTime && endTime) {
+    const startH = parseInt(startTime.substring(0, 5).split(':')[0], 10);
+    let endH = parseInt(endTime.substring(0, 5).split(':')[0], 10);
+    if (endH === 0) endH = 24;
+
+    if (!isNaN(startH) && !isNaN(endH) && endH > startH) {
+      const hoursCount = endH - startH;
+      const start12 = format12(startTime);
+      const end12 = format12(endTime);
+      return `${start12} - ${end12} (${hoursCount} Hours)`;
+    }
+  }
+
+  return timeSlotLabel || `${startTime} - ${endTime}`;
+}
+
 export const DEFAULT_ADMIN_SETTINGS: AdminSettings = {
   gcash_number: '0917-888-9900',
   gcash_name: 'BEST INC. BALAMBAN',

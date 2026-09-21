@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Booking } from '@/lib/types';
 import { getAllUserBookings } from '@/lib/supabase';
+import { formatDisplayTimeSlot } from '@/lib/data';
 import { Ticket, Calendar, X, RefreshCw } from 'lucide-react';
 
 interface MyBookingsProps {
@@ -96,12 +97,12 @@ export default function MyBookings({ onClose, onNewBookingClick }: MyBookingsPro
                   </h4>
                   <p className="text-xs text-slate-700 mt-1 flex items-center gap-1.5 font-semibold">
                     <Calendar className="w-3.5 h-3.5 text-lime-600" />
-                    <span>{booking.booking_date} ({booking.time_slot_label || `${booking.start_time} - ${booking.end_time}`})</span>
+                    <span>{booking.booking_date} ({formatDisplayTimeSlot(booking.time_slot_label, booking.start_time, booking.end_time)})</span>
                   </p>
                 </div>
 
                 <div className="bg-white p-2.5 rounded-xl border border-slate-200 text-xs space-y-1 text-slate-600 font-medium">
-                  <p><strong className="text-slate-900">Customer:</strong> {booking.customer_name} ({booking.customer_phone})</p>
+                  <p><strong className="text-slate-900">Customer:</strong> {booking.customer_name}</p>
                   <p><strong className="text-slate-900">Payment:</strong> {booking.payment_method}</p>
                   {booking.equipment_rentals && booking.equipment_rentals.length > 0 && (
                     <p><strong className="text-slate-900">Rentals:</strong> {booking.equipment_rentals.map(r => `${r.quantity}x ${r.name}`).join(', ')}</p>

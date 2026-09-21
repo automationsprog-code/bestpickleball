@@ -448,27 +448,41 @@ export async function getAllUserBookings(): Promise<Booking[]> {
     }
   }
 
-  // 2. Merge local + remote bookings without losing locally saved reservations
+  // 2. Merge local + remote bookings (Supabase DB is authoritative when connected)
   const bookingMap = new Map<string, Booking>();
 
-  // Add local bookings first
-  localBookings.forEach(b => {
-    if (b && (b.reference_no || b.id)) {
-      bookingMap.set(b.reference_no || b.id, b);
-    }
-  });
-
-  // Add/enrich remote bookings from Supabase Cloud DB
   if (isRemoteConnected) {
+    // Populate remote bookings first from Supabase Cloud DB
     remoteBookings.forEach(rb => {
       if (rb && (rb.reference_no || rb.id)) {
         const key = rb.reference_no || rb.id;
-        const localVer = bookingMap.get(key);
+        const localVer = localBookings.find(l => l.id === rb.id || l.reference_no === rb.reference_no);
         bookingMap.set(key, {
           ...rb,
           payment_proof_url: rb.payment_proof_url || localVer?.payment_proof_url,
           payment_ref_no: rb.payment_ref_no || localVer?.payment_ref_no
         });
+      }
+    });
+
+    // Only keep local bookings created within the last 15 seconds that may be pending remote DB insert
+    const now = Date.now();
+    localBookings.forEach(lb => {
+      if (lb && (lb.reference_no || lb.id)) {
+        const key = lb.reference_no || lb.id;
+        if (!bookingMap.has(key)) {
+          const createdTime = lb.created_at ? new Date(lb.created_at).getTime() : 0;
+          if (now - createdTime < 15000) {
+            bookingMap.set(key, lb);
+          }
+        }
+      }
+    });
+  } else {
+    // Fallback when offline
+    localBookings.forEach(b => {
+      if (b && (b.reference_no || b.id)) {
+        bookingMap.set(b.reference_no || b.id, b);
       }
     });
   }
@@ -482,8 +496,8 @@ export async function getAllUserBookings(): Promise<Booking[]> {
     })
     .sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
 
-  // Save merged list to localStorage so local bookings persist reliably
-  if (typeof window !== 'undefined' && mergedList.length > 0) {
+  // Save merged list to localStorage
+  if (typeof window !== 'undefined' && isRemoteConnected) {
     try {
       localStorage.setItem('balamban_pickleball_bookings', JSON.stringify(mergedList));
     } catch (e) {
@@ -491,7 +505,7 @@ export async function getAllUserBookings(): Promise<Booking[]> {
     }
   }
 
-  return mergedList.length > 0 ? mergedList : localBookings;
+  return mergedList.length > 0 ? mergedList : (isRemoteConnected ? mergedList : localBookings);
 }
 
 export async function getBookingsForDate(date: string): Promise<Booking[]> {

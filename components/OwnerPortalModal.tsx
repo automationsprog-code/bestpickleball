@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Booking, AdminSettings, Court } from '@/lib/types';
 import { getAllUserBookings, updateBookingStatus, deleteBooking, getAdminSettings, updateAdminSettings, getCourts, createCourt, updateCourtDetails, updateCourtStatus, deleteCourt } from '@/lib/supabase';
-import { DEFAULT_ADMIN_SETTINGS } from '@/lib/data';
+import { DEFAULT_ADMIN_SETTINGS, formatDisplayTimeSlot } from '@/lib/data';
 import { X, ShieldCheck, QrCode, Search, User, CheckCircle2, Save, RefreshCw, AlertCircle, Lock, KeyRound, LogOut, Plus, Trophy, ToggleLeft, ToggleRight, Edit3, DollarSign, Image as ImageIcon, Upload, Trash2, Clock, Globe, Sparkles, Phone, Zap } from 'lucide-react';
 
 interface OwnerPortalModalProps {
@@ -557,7 +557,7 @@ export default function OwnerPortalModal({ onClose, onCourtsUpdated }: OwnerPort
                               <span className="text-slate-500 text-[11px]">{b.booking_date}</span>
                             </td>
                             <td className="p-3 font-mono font-bold text-lime-800">
-                              {b.time_slot_label || `${b.start_time} - ${b.end_time}`}
+                              {formatDisplayTimeSlot(b.time_slot_label, b.start_time, b.end_time)}
                             </td>
                             <td className="p-3">
                               <span className="font-mono font-black text-slate-900 block">₱{b.total_amount}</span>

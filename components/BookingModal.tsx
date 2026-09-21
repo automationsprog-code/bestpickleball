@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Court, Booking, EquipmentRental, AdminSettings } from '@/lib/types';
-import { HOURLY_SLOTS, HourlySlot, DEFAULT_ADMIN_SETTINGS, generateHourlySlots } from '@/lib/data';
+import { HOURLY_SLOTS, HourlySlot, DEFAULT_ADMIN_SETTINGS, generateHourlySlots, formatSelectedSlotsLabel } from '@/lib/data';
 import { getBookingsForDate, createBooking, getAdminSettings } from '@/lib/supabase';
 import { X, Calendar, Clock, CheckCircle2, QrCode, Ticket, Loader2, Upload, AlertCircle, Maximize2 } from 'lucide-react';
 
@@ -140,12 +140,8 @@ export default function BookingModal({ court, onClose, onBookingSuccess }: Booki
   const sortedSelectedSlots = [...selectedSlots].sort((a, b) => a.startTime.localeCompare(b.startTime));
   const selectedSlotsCount = sortedSelectedSlots.length;
 
-  // Formatted multi-slot label
-  const selectedSlotsFormattedLabel = sortedSelectedSlots.length === 0
-    ? 'Palihug pagpili og time slot'
-    : sortedSelectedSlots.length === 1
-    ? sortedSelectedSlots[0].label
-    : `${sortedSelectedSlots.map(s => s.label).join(', ')} (${sortedSelectedSlots.length} Hours)`;
+  // Formatted multi-slot label (formats continuous slots as "7:00 PM - 10:00 PM (3 Hours)")
+  const selectedSlotsFormattedLabel = formatSelectedSlotsLabel(sortedSelectedSlots);
 
   // Calculate pricing with multi-slot multiplier
   const courtPrice = court.hourly_rate * selectedSlotsCount;
