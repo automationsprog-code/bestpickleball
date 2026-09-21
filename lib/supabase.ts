@@ -296,24 +296,32 @@ export async function updateCourtStatus(id: string, is_active: boolean): Promise
   return updateCourtDetails(id, { is_active });
 }
 
-function toDbBooking(b: Booking) {
+function toDbBooking(b: Booking, targetCourtId?: string) {
+  let cleanNotes = b.notes || '';
+  if (b.payment_ref_no && !cleanNotes.includes('Ref:')) {
+    cleanNotes += ` (Ref: ${b.payment_ref_no})`;
+  }
+  if (b.payment_proof_url && b.payment_proof_url.startsWith('http') && !cleanNotes.includes('___PROOF___:')) {
+    cleanNotes += ` ___PROOF___:${b.payment_proof_url}___REF___:${b.payment_ref_no || ''}`;
+  }
+
   return {
     id: b.id,
     reference_no: b.reference_no,
-    court_id: b.court_id || '11111111-1111-1111-1111-111111111111',
+    court_id: targetCourtId || b.court_id || '11111111-1111-1111-1111-111111111111',
     customer_name: b.customer_name,
     customer_email: b.customer_email || 'customer@example.com',
     customer_phone: b.customer_phone,
     booking_date: b.booking_date,
+    time_slot_label: b.time_slot_label || '8:00 AM - 9:00 AM',
     start_time: b.start_time,
     end_time: b.end_time,
     total_amount: b.total_amount,
     equipment_rentals: b.equipment_rentals || [],
     payment_method: b.payment_method || 'GCash',
-    payment_proof_url: b.payment_proof_url || '',
-    payment_ref_no: b.payment_ref_no || '',
+    payment_status: b.payment_status || 'Paid',
     status: b.status || 'Confirmed',
-    notes: b.notes || '',
+    notes: cleanNotes.substring(0, 500),
     created_at: b.created_at || new Date().toISOString()
   };
 }
@@ -378,72 +386,35 @@ export async function createBooking(newBooking: Omit<Booking, 'id' | 'created_at
     }
   }
 
-  // 2. Try inserting into Supabase Cloud DB with safe clean payloads
+  // 2. Try inserting into Supabase Cloud DB with safe clean payloads matching postgres schema
   if (supabase) {
     try {
       const activeCourts = await getCourts();
-      const validCourtId = (activeCourts.length > 0 && activeCourts[0].id) 
-        ? activeCourts[0].id 
-        : '11111111-1111-1111-1111-111111111111';
-
-      const targetCourtId = booking.court_id || validCourtId;
-
-      // Clean notes string (never append huge base64 data URLs to notes!)
-      let cleanNotes = booking.notes || '';
-      if (booking.payment_ref_no) {
-        cleanNotes += ` (Ref: ${booking.payment_ref_no})`;
+      let validCourtId = booking.court_id;
+      if (!activeCourts.some(c => c.id === validCourtId)) {
+        validCourtId = (activeCourts.length > 0 && activeCourts[0].id) 
+          ? activeCourts[0].id 
+          : '11111111-1111-1111-1111-111111111111';
       }
 
-      // Attempt 1: Full payload with custom columns
-      const fullPayload = toDbBooking({ ...booking, court_id: targetCourtId, notes: cleanNotes });
-      const { data, error } = await supabase.from('bookings').insert([fullPayload]).select().single();
+      const dbPayload = toDbBooking(booking, validCourtId);
+      const { data, error } = await supabase.from('bookings').insert([dbPayload]).select().single();
 
       if (!error && data) {
         return fromDbBooking(data);
       }
 
-      console.warn('Supabase full insert warning, attempting standard schema insert:', error);
+      console.warn('Supabase insert warning, attempting fallback with default court ID:', error);
 
-      // Attempt 2: Standard Supabase Schema Payload with clean text fields (No 100KB base64 strings in notes!)
-      const standardPayload: any = {
-        id: booking.id,
-        reference_no: booking.reference_no,
-        court_id: targetCourtId,
-        customer_name: booking.customer_name,
-        customer_email: booking.customer_email || 'customer@example.com',
-        customer_phone: booking.customer_phone,
-        booking_date: booking.booking_date,
-        start_time: booking.start_time,
-        end_time: booking.end_time,
-        total_amount: booking.total_amount,
-        equipment_rentals: booking.equipment_rentals || [],
-        payment_method: booking.payment_method || 'GCash',
-        status: booking.status || 'Confirmed',
-        notes: cleanNotes.substring(0, 240), // Ensure notes string stays within VARCHAR limits
-        created_at: booking.created_at || new Date().toISOString()
-      };
-
-      const { data: data2, error: error2 } = await supabase.from('bookings').insert([standardPayload]).select().single();
+      // Attempt 2: Fallback with default UUID if foreign key constraint failed
+      const fallbackPayload = toDbBooking(booking, '11111111-1111-1111-1111-111111111111');
+      const { data: data2, error: error2 } = await supabase.from('bookings').insert([fallbackPayload]).select().single();
 
       if (!error2 && data2) {
         return fromDbBooking(data2);
       }
 
-      console.warn('Supabase standard insert warning, attempting fallback UUID insert:', error2);
-
-      // Attempt 3: Fallback with default UUID '11111111-1111-1111-1111-111111111111'
-      const minimalPayload: any = {
-        ...standardPayload,
-        court_id: '11111111-1111-1111-1111-111111111111'
-      };
-
-      const { data: data3, error: error3 } = await supabase.from('bookings').insert([minimalPayload]).select().single();
-
-      if (!error3 && data3) {
-        return fromDbBooking(data3);
-      }
-
-      console.warn('Supabase minimal insert failed:', error3);
+      console.warn('Supabase fallback insert failed:', error2);
 
     } catch (err) {
       console.warn('Supabase insert booking exception:', err);
@@ -512,6 +483,35 @@ export async function getAllUserBookings(): Promise<Booking[]> {
         }
       }
     });
+
+    // Auto-sync any local bookings missing from Supabase Cloud DB
+    if (localBookings.length > 0) {
+      try {
+        const activeCourts = await getCourts();
+        const fallbackCourtId = activeCourts.length > 0 ? activeCourts[0].id : '11111111-1111-1111-1111-111111111111';
+
+        localBookings.forEach(async (lb) => {
+          if (lb && (lb.reference_no || lb.id)) {
+            const existsInRemote = remoteBookings.some(rb => rb.id === lb.id || rb.reference_no === lb.reference_no);
+            const isDeleted = deletedIds.includes(lb.id) || deletedIds.includes(lb.reference_no);
+
+            if (!existsInRemote && !isDeleted) {
+              try {
+                const targetCourtId = activeCourts.some(c => c.id === lb.court_id) ? lb.court_id : fallbackCourtId;
+                const dbPayload = toDbBooking(lb, targetCourtId);
+                if (supabase) {
+                  await supabase.from('bookings').insert([dbPayload]);
+                }
+              } catch (e) {
+                console.warn('Auto sync local booking error:', e);
+              }
+            }
+          }
+        });
+      } catch (e) {
+        console.warn('Auto sync check error:', e);
+      }
+    }
   }
 
   const mergedList = Array.from(bookingMap.values())
