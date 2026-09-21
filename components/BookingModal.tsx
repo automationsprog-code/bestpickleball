@@ -163,9 +163,22 @@ export default function BookingModal({ court, onClose, onBookingSuccess }: Booki
     reader.readAsDataURL(file);
   };
 
+  const sanitizeInput = (str: string): string => {
+    if (!str) return '';
+    return str.replace(/<[^>]*>?/gm, '').trim();
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!customerName || !customerPhone) {
+    if (submitting) return;
+
+    const cleanName = sanitizeInput(customerName);
+    const cleanPhone = sanitizeInput(customerPhone);
+    const cleanEmail = sanitizeInput(customerEmail);
+    const cleanRefInput = sanitizeInput(paymentRefNoInput);
+    const cleanNotes = sanitizeInput(notes);
+
+    if (!cleanName || !cleanPhone) {
       alert('Palihug ibutang ang imong Pangalan ug Phone Number.');
       return;
     }
@@ -207,9 +220,9 @@ export default function BookingModal({ court, onClose, onBookingSuccess }: Booki
         reference_no: refNo,
         court_id: court.id,
         court_name: court.name,
-        customer_name: customerName,
-        customer_email: customerEmail || 'customer@balamban.ph',
-        customer_phone: customerPhone,
+        customer_name: cleanName,
+        customer_email: cleanEmail || 'customer@balamban.ph',
+        customer_phone: cleanPhone,
         booking_date: selectedDate,
         time_slot_label: selectedSlotsFormattedLabel,
         start_time: sortedSelectedSlots[0].startTime,
@@ -220,8 +233,8 @@ export default function BookingModal({ court, onClose, onBookingSuccess }: Booki
         payment_status: 'Paid',
         status: 'Confirmed',
         payment_proof_url: paymentProofUrl,
-        payment_ref_no: paymentRefNoInput,
-        notes: notes || `Multi-slot reservation (${sortedSelectedSlots.length} hrs)`
+        payment_ref_no: cleanRefInput,
+        notes: cleanNotes || `Multi-slot reservation (${sortedSelectedSlots.length} hrs)`
       };
 
       // Create single main booking record

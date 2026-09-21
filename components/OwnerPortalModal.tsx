@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Booking, AdminSettings, Court } from '@/lib/types';
 import { getAllUserBookings, updateBookingStatus, deleteBooking, getAdminSettings, updateAdminSettings, getCourts, createCourt, updateCourtDetails, updateCourtStatus, deleteCourt } from '@/lib/supabase';
 import { DEFAULT_ADMIN_SETTINGS, formatDisplayTimeSlot } from '@/lib/data';
-import { X, ShieldCheck, QrCode, Search, User, CheckCircle2, Save, RefreshCw, AlertCircle, Lock, KeyRound, LogOut, Plus, Trophy, ToggleLeft, ToggleRight, Edit3, DollarSign, Image as ImageIcon, Upload, Trash2, Clock, Globe, Sparkles, Phone, Zap } from 'lucide-react';
+import { X, ShieldCheck, QrCode, Search, User, CheckCircle2, Save, RefreshCw, AlertCircle, Lock, KeyRound, LogOut, Plus, Trophy, ToggleLeft, ToggleRight, Edit3, DollarSign, Image as ImageIcon, Upload, Trash2, Clock, Globe, Sparkles, Phone, Zap, Loader2 } from 'lucide-react';
 
 interface OwnerPortalModalProps {
   onClose: () => void;
@@ -54,14 +54,33 @@ export default function OwnerPortalModal({ onClose, onCourtsUpdated }: OwnerPort
   const [savingSettings, setSavingSettings] = useState(false);
   const [saveSuccessMsg, setSaveSuccessMsg] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const [loggingIn, setLoggingIn] = useState(false);
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (username.trim() === 'bestadmin' && password.trim() === 'admin12345') {
-      setIsAuthenticated(true);
-      setLoginError(false);
-      loadData();
-    } else {
+    setLoggingIn(true);
+    setLoginError(false);
+
+    try {
+      const res = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: username.trim(), password: password.trim() })
+      });
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        setIsAuthenticated(true);
+        setLoginError(false);
+        loadData();
+      } else {
+        setLoginError(true);
+      }
+    } catch (err) {
+      console.error('Admin login error:', err);
       setLoginError(true);
+    } finally {
+      setLoggingIn(false);
     }
   };
 
@@ -424,9 +443,17 @@ export default function OwnerPortalModal({ onClose, onCourtsUpdated }: OwnerPort
 
             <button
               type="submit"
-              className="w-full py-3.5 rounded-xl bg-lime-500 hover:bg-lime-600 text-slate-950 font-black text-xs tracking-wider transition shadow-md"
+              disabled={loggingIn}
+              className="w-full py-3.5 rounded-xl bg-lime-500 hover:bg-lime-600 disabled:opacity-50 text-slate-950 font-black text-xs tracking-wider transition shadow-md flex items-center justify-center gap-2"
             >
-              LOGIN TO OWNER PORTAL
+              {loggingIn ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>VERIFYING CREDENTIALS...</span>
+                </>
+              ) : (
+                'LOGIN TO OWNER PORTAL'
+              )}
             </button>
           </form>
         ) : (
