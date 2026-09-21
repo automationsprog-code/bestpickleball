@@ -332,7 +332,7 @@ export async function createBooking(newBooking: Omit<Booking, 'id' | 'created_at
     created_at
   };
 
-  // 1. ALWAYS store locally first so it is immediately locked & available in UI
+  // 1. ALWAYS store locally first so it is immediately available on device
   if (typeof window !== 'undefined') {
     try {
       const local = localStorage.getItem('balamban_pickleball_bookings');
@@ -344,7 +344,7 @@ export async function createBooking(newBooking: Omit<Booking, 'id' | 'created_at
     }
   }
 
-  // 2. Try inserting into Supabase Cloud DB with 3-tier insertion ladder
+  // 2. Try inserting into Supabase Cloud DB with safe clean payloads
   if (supabase) {
     try {
       const activeCourts = await getCourts();
@@ -354,12 +354,14 @@ export async function createBooking(newBooking: Omit<Booking, 'id' | 'created_at
 
       const targetCourtId = booking.court_id || validCourtId;
 
-      let embeddedNotes = booking.notes || '';
-      if (booking.payment_proof_url) embeddedNotes += ` ___PROOF___:${booking.payment_proof_url}`;
-      if (booking.payment_ref_no) embeddedNotes += ` ___REF___:${booking.payment_ref_no}`;
+      // Clean notes string (never append huge base64 data URLs to notes!)
+      let cleanNotes = booking.notes || '';
+      if (booking.payment_ref_no) {
+        cleanNotes += ` (Ref: ${booking.payment_ref_no})`;
+      }
 
       // Attempt 1: Full payload with custom columns
-      const fullPayload = toDbBooking({ ...booking, court_id: targetCourtId });
+      const fullPayload = toDbBooking({ ...booking, court_id: targetCourtId, notes: cleanNotes });
       const { data, error } = await supabase.from('bookings').insert([fullPayload]).select().single();
 
       if (!error && data) {
@@ -368,7 +370,7 @@ export async function createBooking(newBooking: Omit<Booking, 'id' | 'created_at
 
       console.warn('Supabase full insert warning, attempting standard schema insert:', error);
 
-      // Attempt 2: Standard Supabase Schema Payload with valid court_id and embedded proof/ref notes
+      // Attempt 2: Standard Supabase Schema Payload with clean text fields (No 100KB base64 strings in notes!)
       const standardPayload: any = {
         id: booking.id,
         reference_no: booking.reference_no,
@@ -383,7 +385,7 @@ export async function createBooking(newBooking: Omit<Booking, 'id' | 'created_at
         equipment_rentals: booking.equipment_rentals || [],
         payment_method: booking.payment_method || 'GCash',
         status: booking.status || 'Confirmed',
-        notes: embeddedNotes,
+        notes: cleanNotes.substring(0, 240), // Ensure notes string stays within VARCHAR limits
         created_at: booking.created_at || new Date().toISOString()
       };
 
@@ -446,50 +448,50 @@ export async function getAllUserBookings(): Promise<Booking[]> {
     }
   }
 
-  // 2. When Supabase is connected, Cloud DB is the authoritative source across all devices
-  if (isRemoteConnected) {
-    const localMap = new Map<string, Booking>();
-    localBookings.forEach(b => {
-      if (b && (b.reference_no || b.id)) {
-        localMap.set(b.reference_no || b.id, b);
-      }
-    });
+  // 2. Merge local + remote bookings without losing locally saved reservations
+  const bookingMap = new Map<string, Booking>();
 
-    const syncedBookings = remoteBookings
-      .filter(b => {
-        if (!b) return false;
-        if (b.reference_no && b.reference_no.match(/-\d+$/)) return false;
-        if (b.total_amount === 0 && b.notes && b.notes.includes('Slot lock')) return false;
-        return true;
-      })
-      .map(rb => {
+  // Add local bookings first
+  localBookings.forEach(b => {
+    if (b && (b.reference_no || b.id)) {
+      bookingMap.set(b.reference_no || b.id, b);
+    }
+  });
+
+  // Add/enrich remote bookings from Supabase Cloud DB
+  if (isRemoteConnected) {
+    remoteBookings.forEach(rb => {
+      if (rb && (rb.reference_no || rb.id)) {
         const key = rb.reference_no || rb.id;
-        const localVer = localMap.get(key);
-        return {
+        const localVer = bookingMap.get(key);
+        bookingMap.set(key, {
           ...rb,
           payment_proof_url: rb.payment_proof_url || localVer?.payment_proof_url,
           payment_ref_no: rb.payment_ref_no || localVer?.payment_ref_no
-        };
-      });
-
-    // Sync localStorage so deletions on another device immediately update local storage
-    if (typeof window !== 'undefined') {
-      try {
-        localStorage.setItem('balamban_pickleball_bookings', JSON.stringify(syncedBookings));
-      } catch (e) {
-        console.error(e);
+        });
       }
-    }
-
-    return syncedBookings;
+    });
   }
 
-  return localBookings.filter(b => {
-    if (!b) return false;
-    if (b.reference_no && b.reference_no.match(/-\d+$/)) return false;
-    if (b.total_amount === 0 && b.notes && b.notes.includes('Slot lock')) return false;
-    return true;
-  });
+  const mergedList = Array.from(bookingMap.values())
+    .filter(b => {
+      if (!b) return false;
+      if (b.reference_no && b.reference_no.match(/-\d+$/)) return false;
+      if (b.total_amount === 0 && b.notes && b.notes.includes('Slot lock')) return false;
+      return true;
+    })
+    .sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
+
+  // Save merged list to localStorage so local bookings persist reliably
+  if (typeof window !== 'undefined' && mergedList.length > 0) {
+    try {
+      localStorage.setItem('balamban_pickleball_bookings', JSON.stringify(mergedList));
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  return mergedList.length > 0 ? mergedList : localBookings;
 }
 
 export async function getBookingsForDate(date: string): Promise<Booking[]> {
