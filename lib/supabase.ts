@@ -530,8 +530,7 @@ export async function getAllUserBookings(): Promise<Booking[]> {
     }
   }
 
-  const activeLocalBookings = localBookings.filter(b => !deletedIds.includes(b.id) && !deletedIds.includes(b.reference_no));
-  return mergedList.length > 0 ? mergedList : activeLocalBookings;
+  return isRemoteConnected ? mergedList : localBookings.filter(b => !deletedIds.includes(b.id) && !deletedIds.includes(b.reference_no));
 }
 
 export async function getBookingsForDate(date: string): Promise<Booking[]> {
