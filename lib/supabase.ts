@@ -52,6 +52,40 @@ function markCourtAsDeletedLocally(id: string) {
   }
 }
 
+// Helper for tracking deleted booking IDs locally so deleted bookings never reappear
+function getDeletedBookingIds(): string[] {
+  if (typeof window !== 'undefined') {
+    try {
+      const local = localStorage.getItem('balamban_deleted_booking_ids');
+      if (local) return JSON.parse(local);
+    } catch (e) {
+      console.error(e);
+    }
+  }
+  return [];
+}
+
+function markBookingAsDeletedLocally(idOrRef: string) {
+  if (typeof window !== 'undefined') {
+    try {
+      const deletedIds = getDeletedBookingIds();
+      if (!deletedIds.includes(idOrRef)) {
+        deletedIds.push(idOrRef);
+        localStorage.setItem('balamban_deleted_booking_ids', JSON.stringify(deletedIds));
+      }
+      
+      const local = localStorage.getItem('balamban_pickleball_bookings');
+      if (local) {
+        const existing: Booking[] = JSON.parse(local);
+        const filtered = existing.filter(b => b.id !== idOrRef && b.reference_no !== idOrRef && !b.reference_no?.startsWith(`${idOrRef}-`));
+        localStorage.setItem('balamban_pickleball_bookings', JSON.stringify(filtered));
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
+}
+
 // Helper for tracking custom created courts locally so newly added courts never vanish
 function getCustomCreatedCourts(): Court[] {
   if (typeof window !== 'undefined') {
@@ -420,6 +454,8 @@ export async function createBooking(newBooking: Omit<Booking, 'id' | 'created_at
 }
 
 export async function getAllUserBookings(): Promise<Booking[]> {
+  const deletedIds = getDeletedBookingIds();
+
   // 1. Read local bookings first for fallback or image data preservation
   let localBookings: Booking[] = [];
   if (typeof window !== 'undefined') {
@@ -448,41 +484,32 @@ export async function getAllUserBookings(): Promise<Booking[]> {
     }
   }
 
-  // 2. Merge local + remote bookings (Supabase DB is authoritative when connected)
+  // 2. Merge local + remote bookings without losing any saved user reservations
   const bookingMap = new Map<string, Booking>();
 
+  // Add local bookings first (excluding locally deleted ones)
+  localBookings.forEach(b => {
+    if (b && (b.reference_no || b.id)) {
+      const key = b.reference_no || b.id;
+      if (!deletedIds.includes(b.id) && !deletedIds.includes(b.reference_no)) {
+        bookingMap.set(key, b);
+      }
+    }
+  });
+
+  // Enrich / add remote bookings from Supabase Cloud DB
   if (isRemoteConnected) {
-    // Populate remote bookings first from Supabase Cloud DB
     remoteBookings.forEach(rb => {
       if (rb && (rb.reference_no || rb.id)) {
         const key = rb.reference_no || rb.id;
-        const localVer = localBookings.find(l => l.id === rb.id || l.reference_no === rb.reference_no);
-        bookingMap.set(key, {
-          ...rb,
-          payment_proof_url: rb.payment_proof_url || localVer?.payment_proof_url,
-          payment_ref_no: rb.payment_ref_no || localVer?.payment_ref_no
-        });
-      }
-    });
-
-    // Only keep local bookings created within the last 15 seconds that may be pending remote DB insert
-    const now = Date.now();
-    localBookings.forEach(lb => {
-      if (lb && (lb.reference_no || lb.id)) {
-        const key = lb.reference_no || lb.id;
-        if (!bookingMap.has(key)) {
-          const createdTime = lb.created_at ? new Date(lb.created_at).getTime() : 0;
-          if (now - createdTime < 15000) {
-            bookingMap.set(key, lb);
-          }
+        if (!deletedIds.includes(rb.id) && !deletedIds.includes(rb.reference_no)) {
+          const localVer = bookingMap.get(key);
+          bookingMap.set(key, {
+            ...rb,
+            payment_proof_url: rb.payment_proof_url || localVer?.payment_proof_url,
+            payment_ref_no: rb.payment_ref_no || localVer?.payment_ref_no
+          });
         }
-      }
-    });
-  } else {
-    // Fallback when offline
-    localBookings.forEach(b => {
-      if (b && (b.reference_no || b.id)) {
-        bookingMap.set(b.reference_no || b.id, b);
       }
     });
   }
@@ -490,14 +517,15 @@ export async function getAllUserBookings(): Promise<Booking[]> {
   const mergedList = Array.from(bookingMap.values())
     .filter(b => {
       if (!b) return false;
+      if (deletedIds.includes(b.id) || deletedIds.includes(b.reference_no)) return false;
       if (b.reference_no && b.reference_no.match(/-\d+$/)) return false;
       if (b.total_amount === 0 && b.notes && b.notes.includes('Slot lock')) return false;
       return true;
     })
     .sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
 
-  // Save merged list to localStorage
-  if (typeof window !== 'undefined' && isRemoteConnected) {
+  // Save merged list back to localStorage so user bookings persist reliably
+  if (typeof window !== 'undefined') {
     try {
       localStorage.setItem('balamban_pickleball_bookings', JSON.stringify(mergedList));
     } catch (e) {
@@ -505,7 +533,8 @@ export async function getAllUserBookings(): Promise<Booking[]> {
     }
   }
 
-  return mergedList.length > 0 ? mergedList : (isRemoteConnected ? mergedList : localBookings);
+  const activeLocalBookings = localBookings.filter(b => !deletedIds.includes(b.id) && !deletedIds.includes(b.reference_no));
+  return mergedList.length > 0 ? mergedList : activeLocalBookings;
 }
 
 export async function getBookingsForDate(date: string): Promise<Booking[]> {
@@ -539,19 +568,8 @@ export async function updateBookingStatus(id: string, status: Booking['status'],
 }
 
 export async function deleteBooking(idOrRef: string): Promise<boolean> {
-  // 1. ALWAYS remove from local storage
-  if (typeof window !== 'undefined') {
-    try {
-      const local = localStorage.getItem('balamban_pickleball_bookings');
-      if (local) {
-        const existing: Booking[] = JSON.parse(local);
-        const filtered = existing.filter(b => b.id !== idOrRef && b.reference_no !== idOrRef && !b.reference_no?.startsWith(`${idOrRef}-`));
-        localStorage.setItem('balamban_pickleball_bookings', JSON.stringify(filtered));
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  }
+  // 1. Mark booking as deleted locally
+  markBookingAsDeletedLocally(idOrRef);
 
   // 2. Delete from Supabase DB (including any sub-slot records)
   if (supabase) {
