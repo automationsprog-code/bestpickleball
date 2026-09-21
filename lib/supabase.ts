@@ -115,7 +115,16 @@ export async function getCourts(): Promise<Court[]> {
     try {
       const { data, error } = await supabase.from('courts').select('*').order('created_at', { ascending: true });
       if (!error && data !== null) {
-        remoteCourts = data as Court[];
+        if (data.length === 0) {
+          try {
+            const { data: seeded } = await supabase.from('courts').insert(INITIAL_COURTS).select();
+            if (seeded) remoteCourts = seeded as Court[];
+          } catch (e) {
+            console.warn('Auto seed courts warning:', e);
+          }
+        } else {
+          remoteCourts = data as Court[];
+        }
         isRemoteConnected = true;
       }
     } catch (err) {
@@ -124,8 +133,7 @@ export async function getCourts(): Promise<Court[]> {
   }
 
   // When Supabase Cloud DB is connected, it is 100% the SINGLE SOURCE OF TRUTH across all devices!
-  if (isRemoteConnected) {
-    // Deduplicate remote courts by court ID and normalized court name
+  if (isRemoteConnected && remoteCourts.length > 0) {
     const courtMap = new Map<string, Court>();
     remoteCourts.forEach(c => {
       const normKey = c.name ? c.name.toLowerCase().trim() : c.id;
@@ -142,7 +150,6 @@ export async function getCourts(): Promise<Court[]> {
     return validRemote;
   }
 
-  // Fallback ONLY when Supabase is completely unconfigured/offline
   const customCourts = getCustomCreatedCourts();
   const mergedMap = new Map<string, Court>();
   INITIAL_COURTS.forEach(c => mergedMap.set(c.id, c));
@@ -337,52 +344,73 @@ export async function createBooking(newBooking: Omit<Booking, 'id' | 'created_at
     }
   }
 
-  // 2. Try inserting into Supabase with full payload, or fallback safe payload
+  // 2. Try inserting into Supabase Cloud DB with 3-tier insertion ladder
   if (supabase) {
     try {
-      const payload = toDbBooking(booking);
-      const { data, error } = await supabase.from('bookings').insert([payload]).select().single();
-      if (error) {
-        console.warn('Supabase insert booking warning:', error);
-        
-        // Safe fallback payload stripping custom SQL columns that might not exist in Supabase DB schema
-        let embeddedNotes = booking.notes || '';
-        if (booking.payment_proof_url) {
-          embeddedNotes += ` ___PROOF___:${booking.payment_proof_url}`;
-        }
-        if (booking.payment_ref_no) {
-          embeddedNotes += ` ___REF___:${booking.payment_ref_no}`;
-        }
+      const activeCourts = await getCourts();
+      const validCourtId = (activeCourts.length > 0 && activeCourts[0].id) 
+        ? activeCourts[0].id 
+        : '11111111-1111-1111-1111-111111111111';
 
-        const safePayload: any = {
-          id: booking.id,
-          reference_no: booking.reference_no,
-          court_id: (booking.court_id && booking.court_id.length > 20) ? booking.court_id : null,
-          customer_name: booking.customer_name,
-          customer_email: booking.customer_email || 'customer@example.com',
-          customer_phone: booking.customer_phone,
-          booking_date: booking.booking_date,
-          start_time: booking.start_time,
-          end_time: booking.end_time,
-          total_amount: booking.total_amount,
-          equipment_rentals: booking.equipment_rentals || [],
-          payment_method: booking.payment_method || 'GCash',
-          status: booking.status || 'Confirmed',
-          notes: embeddedNotes,
-          created_at: booking.created_at || new Date().toISOString()
-        };
+      const targetCourtId = booking.court_id || validCourtId;
 
-        const { data: fbData, error: fbErr } = await supabase.from('bookings').insert([safePayload]).select().single();
-        if (fbData) {
-          return fromDbBooking(fbData);
-        } else if (fbErr) {
-          console.warn('Fallback insert error:', fbErr);
-        }
-      } else if (data) {
+      let embeddedNotes = booking.notes || '';
+      if (booking.payment_proof_url) embeddedNotes += ` ___PROOF___:${booking.payment_proof_url}`;
+      if (booking.payment_ref_no) embeddedNotes += ` ___REF___:${booking.payment_ref_no}`;
+
+      // Attempt 1: Full payload with custom columns
+      const fullPayload = toDbBooking({ ...booking, court_id: targetCourtId });
+      const { data, error } = await supabase.from('bookings').insert([fullPayload]).select().single();
+
+      if (!error && data) {
         return fromDbBooking(data);
       }
+
+      console.warn('Supabase full insert warning, attempting standard schema insert:', error);
+
+      // Attempt 2: Standard Supabase Schema Payload with valid court_id and embedded proof/ref notes
+      const standardPayload: any = {
+        id: booking.id,
+        reference_no: booking.reference_no,
+        court_id: targetCourtId,
+        customer_name: booking.customer_name,
+        customer_email: booking.customer_email || 'customer@example.com',
+        customer_phone: booking.customer_phone,
+        booking_date: booking.booking_date,
+        start_time: booking.start_time,
+        end_time: booking.end_time,
+        total_amount: booking.total_amount,
+        equipment_rentals: booking.equipment_rentals || [],
+        payment_method: booking.payment_method || 'GCash',
+        status: booking.status || 'Confirmed',
+        notes: embeddedNotes,
+        created_at: booking.created_at || new Date().toISOString()
+      };
+
+      const { data: data2, error: error2 } = await supabase.from('bookings').insert([standardPayload]).select().single();
+
+      if (!error2 && data2) {
+        return fromDbBooking(data2);
+      }
+
+      console.warn('Supabase standard insert warning, attempting fallback UUID insert:', error2);
+
+      // Attempt 3: Fallback with default UUID '11111111-1111-1111-1111-111111111111'
+      const minimalPayload: any = {
+        ...standardPayload,
+        court_id: '11111111-1111-1111-1111-111111111111'
+      };
+
+      const { data: data3, error: error3 } = await supabase.from('bookings').insert([minimalPayload]).select().single();
+
+      if (!error3 && data3) {
+        return fromDbBooking(data3);
+      }
+
+      console.warn('Supabase minimal insert failed:', error3);
+
     } catch (err) {
-      console.warn('Supabase insert booking error, stored locally:', err);
+      console.warn('Supabase insert booking exception:', err);
     }
   }
 
